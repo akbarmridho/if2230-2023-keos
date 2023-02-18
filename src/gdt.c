@@ -21,9 +21,19 @@ struct GlobalDescriptorTable global_descriptor_table = {
          .default_op_size = 0,
          .granularity = 0,
          .base_high = 0},
-        {
-            // TODO : Implement
-        },
+        {.segment_low = 0xFFFFF,
+         .base_low = 0,
+         .base_mid = 0,
+         .type_bit = 0xA,
+         .non_system = 1,
+         .privilege_level = 0,
+         .is_present = 1,
+         .segment_limit = 0,
+         .usable_by_software = 0, // Asked to Chat GPT, can be concluded its dynamic
+         .is_64bit_segment = 0,
+         .default_op_size = 1,
+         .granularity = 1,
+         .base_high = 0},
         {.segment_low = 0,
          .base_low = 0,
          .base_mid = 0,
