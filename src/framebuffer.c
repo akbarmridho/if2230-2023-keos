@@ -3,8 +3,6 @@
 #include "lib-header/stdmem.h"
 #include "lib-header/portio.h"
 
-#define VGA_WIDTH 80;
-
 void enable_cursor(uint8_t start, uint8_t end)
 {
     out(0x3D4, 0x0A);
