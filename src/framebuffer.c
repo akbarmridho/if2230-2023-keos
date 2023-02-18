@@ -41,11 +41,5 @@ void framebuffer_write(uint8_t row, uint8_t col, char c, uint8_t fg, uint8_t bg)
 
 void framebuffer_clear(void)
 {
-    for (size_t i = 0; i < ROW; i++)
-    {
-        for (size_t j = 0; j < COLUMN; j++)
-        {
-            framebuffer_write(i, j, '\0', 0, 0);
-        }
-    }
+    memset(MEMORY_FRAMEBUFFER, 0, COLUMN * 2 * ROW);
 }
