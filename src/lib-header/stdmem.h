@@ -13,7 +13,7 @@
  * 
  * @return Pointer s
 */
-void* memset(void *s, int c, size_t n);
+void* memset(void *s, uint8_t c, size_t n);
 
 /**
  * C standard memcpy, check man memcpy or

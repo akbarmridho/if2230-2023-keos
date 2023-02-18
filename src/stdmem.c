@@ -1,10 +1,10 @@
 #include "lib-header/stdtype.h"
 #include "lib-header/stdmem.h"
 
-void* memset(void *s, int c, size_t n) {
+void* memset(void *s, uint8_t c, size_t n) {
     uint8_t *buf = (uint8_t*) s;
     for (size_t i = 0; i < n; i++)
-        buf[i] = (uint8_t) c;
+        buf[i] = c;
     return s;
 }
 
