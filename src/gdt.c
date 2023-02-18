@@ -24,9 +24,19 @@ struct GlobalDescriptorTable global_descriptor_table = {
         {
             // TODO : Implement
         },
-        {
-            // TODO : Implement
-        }}};
+        {.segment_low = 0,
+         .base_low = 0,
+         .base_mid = 0,
+         .type_bit = 0x2,
+         .non_system = 1,
+         .privilege_level = 0,
+         .is_present = 1,
+         .segment_limit = 0xFFFFF,
+         .usable_by_software = 0,
+         .is_64bit_segment = 0,
+         .default_op_size = 1,
+         .granularity = 1,
+         .base_high = 0}}};
 
 /**
  * _gdt_gdtr, predefined system GDTR.
