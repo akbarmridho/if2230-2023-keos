@@ -3,9 +3,11 @@
 
 #include "lib-header/stdtype.h"
 
-#define MEMORY_FRAMEBUFFER (uint8_t *) 0xB8000
-#define CURSOR_PORT_CMD    0x03D4
-#define CURSOR_PORT_DATA   0x03D5
+#define MEMORY_FRAMEBUFFER (uint8_t *)0xB8000
+#define CURSOR_PORT_CMD 0x03D4
+#define CURSOR_PORT_DATA 0x03D5
+#define COLUMN 80
+#define ROW 25
 
 /**
  * Terminal framebuffer
@@ -13,7 +15,7 @@
  * Starting at MEMORY_FRAMEBUFFER,
  * - Even number memory: Character, 8-bit
  * - Odd number memory:  Character color lower 4-bit, Background color upper 4-bit
-*/
+ */
 
 /**
  * Set framebuffer character and color with corresponding parameter values.
@@ -29,16 +31,16 @@ void framebuffer_write(uint8_t row, uint8_t col, char c, uint8_t fg, uint8_t bg)
 
 /**
  * Set cursor to specified location. Row and column starts from 0
- * 
+ *
  * @param r row
  * @param c column
-*/
+ */
 void framebuffer_set_cursor(uint8_t r, uint8_t c);
 
-/** 
+/**
  * Set all cell in framebuffer character to 0x00 (empty character)
  * and color to 0x07 (gray character & black background)
- * 
+ *
  */
 void framebuffer_clear(void);
 
