@@ -21,21 +21,21 @@ extern struct GDTR _gdt_gdtr;
 struct SegmentDescriptor
 {
     // First 32-bit
-    uint16_t segment_low;
-    uint16_t base_low;
+    uint16_t segment_low; // Segment limit
+    uint16_t base_low;    // base address
 
     // Next 16-bit (Bit 32 to 47)
-    uint8_t base_mid;
-    uint8_t type_bit : 4;
-    uint8_t non_system : 1;
-    uint8_t privilege_level : 2;
-    uint8_t is_present : 1;
-    uint8_t segment_limit : 4;
-    uint8_t usable_by_software : 1;
-    uint8_t is_64bit_segment : 1;
-    uint8_t default_op_size : 1;
-    uint8_t granularity : 1;
-    uint8_t base_high;
+    uint8_t base_mid;               // base mid
+    uint8_t type_bit : 4;           // type
+    uint8_t non_system : 1;         // s
+    uint8_t privilege_level : 2;    // dpl
+    uint8_t is_present : 1;         // p
+    uint8_t segment_limit : 4;      // seg limit
+    uint8_t usable_by_software : 1; // avl
+    uint8_t is_64bit_segment : 1;   // l
+    uint8_t default_op_size : 1;    // D/B
+    uint8_t granularity : 1;        // G
+    uint8_t base_high;              // base
 } __attribute__((packed));
 
 /**
