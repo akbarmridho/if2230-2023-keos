@@ -12,7 +12,7 @@ void kernel_setup(void)
     framebuffer_write(3, 9, 'a', 0, 0xF);
     framebuffer_write(3, 10, 'i', 0, 0xF);
     framebuffer_write(3, 11, '!', 0, 0xF);
-    // framebuffer_set_cursor(3, 10);
+    framebuffer_set_cursor(3, 10);
     while (TRUE)
         ;
 }
