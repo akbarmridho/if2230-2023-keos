@@ -43,4 +43,3 @@ iso: kernel
 	@cp $(SOURCE_FOLDER)/menu.lst   $(OUTPUT_FOLDER)/iso/boot/grub/
 	@genisoimage -R $(BOOT_FLAG) $(IO_FLAG)
 	@rm -r $(OUTPUT_FOLDER)/iso/
-	@rm -rf $(OUTPUT_FOLDER)/kernel
