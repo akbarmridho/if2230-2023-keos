@@ -48,6 +48,8 @@ void pic_remap(void)
     out(PIC2_DATA, a2);
 }
 
+int count = 0;
+
 void main_interrupt_handler(
     __attribute__((unused)) struct CPURegister cpu,
     uint32_t int_number,
@@ -56,6 +58,7 @@ void main_interrupt_handler(
     switch (int_number)
     {
     case 0x21:
+        count++;
         keyboard_isr();
         break;
     }

@@ -263,6 +263,20 @@ const char keyboard_scancode_1_to_ascii_map[256] = {
     0,
 };
 
+char shift_map[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // a
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // b
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // c
+    0, 0, 0, 0, 0, 0, 0, 0, 0, '"',
+    0, 0, 0, 0, '<', '_', '>', '?', ')', '!',
+    '@', '#', '$', '%', '^', '&', '*', '(', 0, ':',
+    0, '+', 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, '{', '|', '}', 0, 0, '~'
+
+};
+
 static struct KeyboardDriverState keyboard_state;
 
 /* -- Driver Interfaces -- */
@@ -308,6 +322,11 @@ bool is_keyboard_blocking(void)
 int row = 0;
 int col = 0;
 
+bool is_shift()
+{
+    return keyboard_state.shift_left || keyboard_state.shift_right;
+}
+
 void clear_screen()
 {
     framebuffer_clear();
@@ -321,61 +340,95 @@ void keyboard_isr(void)
     else
     {
         uint8_t scancode = in(KEYBOARD_DATA_PORT);
-        char mapped_char = keyboard_scancode_1_to_ascii_map[scancode];
-        // TODO : Implement scancode processing
-        if (mapped_char != '\0') // check if the character is valid
+
+        // handle capslock and shift
+        switch (scancode)
         {
-            if (mapped_char == '\b')
+        case 0x3a:
+            keyboard_state.capslock ^= 1;
+            break;
+        case 0x2a:
+            keyboard_state.shift_left = 1;
+            break;
+        case 0xaa:
+            keyboard_state.shift_left = 0;
+            break;
+        case 0x36:
+            keyboard_state.shift_right = 1;
+            break;
+        case 0xb6:
+            keyboard_state.shift_right = 0;
+            break;
+        default:
+            break;
+        }
+        char mapped_char = keyboard_scancode_1_to_ascii_map[scancode];
+
+        // check char valid
+        if (mapped_char == 0)
+        {
+            pic_ack(IRQ_KEYBOARD);
+            return;
+        }
+        if (mapped_char == '\b')
+        {
+            // backspace
+            if (keyboard_state.buffer_index > 0)
             {
-                if (keyboard_state.buffer_index > 0)
+                keyboard_state.buffer_index--;
+                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
+                if (col == 0)
                 {
-                    keyboard_state.buffer_index--;
-                    keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
-                    col--;
-                    if (col < 0)
-                    {
-                        row--;
-                        col = COLUMN;
-                    }
+                    row--;
+                    col = COLUMN - 1;
                     if (row < 0)
                     {
                         row = 0;
                         col = 0;
                     }
-
-                    framebuffer_write(row, col, ' ', 0xFF, 0);
                 }
+                else
+                {
+                    col--;
+                }
+
+                framebuffer_write(row, col, ' ', 0xFF, 0);
             }
-            else if (mapped_char == '\n')
+        }
+        else if (mapped_char == '\n')
+        {
+            memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
+            keyboard_state.buffer_index = 0;
+            keyboard_state.keyboard_input_on = 0;
+            row++;
+            col = 0;
+        }
+        else
+        {
+            // check if letter needs to be uppercased
+            if (mapped_char >= 'a' && mapped_char <= 'z')
             {
-                memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
-                keyboard_state.buffer_index = 0;
-                keyboard_state.keyboard_input_on = 0;
+                if (keyboard_state.capslock ^ is_shift())
+                    mapped_char = 'A' + mapped_char - 'a';
+            }
+            // map character to its shift representation if there any
+            else if (is_shift() && mapped_char < 97 && shift_map[(uint8_t)mapped_char] != 0)
+            {
+                mapped_char = shift_map[(uint8_t)mapped_char];
+            }
+            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
+            keyboard_state.buffer_index++;
+
+            // write the last character to the screen
+            if (col >= COLUMN)
+            {
                 row++;
                 col = 0;
             }
-            else
-            {
-                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
-                keyboard_state.buffer_index++;
-
-                // write the last character to the screen
-                if (col >= COLUMN)
-                {
-                    row++;
-                    col = 0;
-                }
-                framebuffer_write(row, col, mapped_char, 0xFF, 0);
-                col++;
-            }
-            framebuffer_set_cursor(row, col);
+            framebuffer_write(row, col, mapped_char, 0xFF, 0);
+            col++;
         }
-        // write the entire keyboard buffer to the screen
-
-        // framebuffer_write(row, col, keyboard_state.keyboard_buffer[keyboard_state.buffer_index], 0xFF, 0x00);
-
-        // memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
-        // keyboard_state.buffer_index = 0;
+        framebuffer_set_cursor(row, col);
     }
     pic_ack(IRQ_KEYBOARD);
 }
