@@ -4,7 +4,7 @@ extern kernel_setup                  ; kernel
 
 
 
-KERNEL_STACK_SIZE equ 4096           ; size of stack in bytes
+KERNEL_STACK_SIZE equ 2097152        ; size of stack in bytes
 MAGIC_NUMBER      equ 0x1BADB002     ; define the magic number constant
 FLAGS             equ 0x0            ; multiboot flags
 CHECKSUM          equ -MAGIC_NUMBER  ; calculate the checksum

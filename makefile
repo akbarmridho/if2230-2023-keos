@@ -20,14 +20,17 @@ LFLAGS        = -T $(SOURCE_FOLDER)/linker.ld -melf_i386
 BOOT_FLAG	  = -b boot/grub/grub1 -no-emul-boot -boot-load-size 4
 IO_FLAG		  = -A os -input-charset utf8 -quiet -boot-info-table -o ${OUTPUT_FOLDER}/${ISO_NAME}.iso $(OUTPUT_FOLDER)/iso
 
+DISK_NAME	  = storage
+
 run: all
-	@qemu-system-i386 -s -S -cdrom $(OUTPUT_FOLDER)/$(ISO_NAME).iso
+	@qemu-system-i386 -s -S -drive file=storage.bin,format=raw,if=ide,index=0,media=disk -cdrom $(OUTPUT_FOLDER)/$(ISO_NAME).iso
 all: build
 build: iso
 clean:
 	rm -rf *.o *.iso $(OUTPUT_FOLDER)/kernel
 
-
+disk:
+	@qemu-img create -f raw $(OUTPUT_FOLDER)/$(DISK_NAME).bin 4M
 
 kernel:
 
