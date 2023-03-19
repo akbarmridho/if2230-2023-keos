@@ -1,5 +1,6 @@
 #include "interrupt.h"
 #include "../lib-header/portio.h"
+#include "../lib-header/keyboard.h"
 
 void io_wait(void)
 {
@@ -54,6 +55,9 @@ void main_interrupt_handler(
 {
     switch (int_number)
     {
+    case 0x21:
+        keyboard_isr();
+        break;
     }
 }
 

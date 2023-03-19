@@ -13,7 +13,7 @@ struct IDTR _idt_idtr = {
 
 void initialize_idt(void)
 {
-    /* TODO :
+    /*
      * Iterate all isr_stub_table,
      * Set all IDT entry with set_interrupt_gate()
      * with following values:
@@ -44,7 +44,6 @@ void set_interrupt_gate(uint8_t int_vector, void *handler_address, uint16_t gdt_
     idt_int_gate->gate_32 = 1;
     idt_int_gate->valid_bit = 1;
 
-    // Kerjain dari sini
     uint16_t lower = (uint32_t)handler_address & 0xFFFF;
     uint16_t higher = ((uint32_t)handler_address) >> 16 & 0xFFFF;
 

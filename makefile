@@ -37,7 +37,9 @@ kernel:
 	# $(INTERRUPT_OBJECTS): bin/%.o: interrupt/%.c
 	# $(CC) $(CFLAGS) $< -o $@
 
+
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/interrupt/interrupt.c -o ${OUTPUT_FOLDER}/interrupt.o
+	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/keyboard.c -o ${OUTPUT_FOLDER}/keyboard.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/interrupt/idt.c -o ${OUTPUT_FOLDER}/idt.o
 	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/interrupt/intsetup.s -o ${OUTPUT_FOLDER}/intsetup.o
 	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/kernel_loader.s -o $(OUTPUT_FOLDER)/kernel_loader.o
