@@ -1,7 +1,6 @@
 #include "fat32.h"
 #include "disk.h"
 #include "../lib-header/stdtype.h"
-#include "../lib-header/stdmem.h"
 
 const uint8_t fs_signature[BLOCK_SIZE] = {
     'C',
@@ -149,12 +148,12 @@ void initialize_filesystem_fat32(void);
  */
 void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count)
 {
-    ClusterBuffer *clusters = (ClusterBuffer *)ptr;
+    cluster_t *clusters = (cluster_t *)ptr;
 
     for (uint8_t i = 0; i < cluster_count; i++)
     {
         uint32_t lba = cluster_to_lba(cluster_number);
-        write_blocks(clusters[i], lba, CLUSTER_BLOCK_COUNT);
+        write_blocks((void *)&clusters[i], lba, CLUSTER_BLOCK_COUNT);
         cluster_number++;
     }
 }
@@ -169,12 +168,12 @@ void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_co
  */
 void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count)
 {
-    ClusterBuffer *clusters = (ClusterBuffer *)ptr;
+    cluster_t *clusters = (cluster_t *)ptr;
 
     for (uint8_t i = 0; i < cluster_count; i++)
     {
         uint32_t lba = cluster_to_lba(cluster_number);
-        read_blocks(clusters[i], lba, CLUSTER_BLOCK_COUNT);
+        read_blocks((void *)&clusters[i], lba, CLUSTER_BLOCK_COUNT);
         cluster_number++;
     }
 }

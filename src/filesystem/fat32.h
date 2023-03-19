@@ -2,7 +2,7 @@
 #define _FAT32_H
 
 #include "disk.h"
-#include "stdtype.h"
+#include "../lib-header/stdtype.h"
 
 /**
  * FAT32 - IF2230 edition - 2023
@@ -36,10 +36,10 @@
 extern const uint8_t fs_signature[BLOCK_SIZE];
 
 // Cluster buffer data type - @param buf Byte buffer with size of CLUSTER_SIZE
-struct ClusterBuffer
+typedef struct ClusterBuffer
 {
     uint8_t buf[CLUSTER_SIZE];
-} __attribute__((packed));
+} __attribute__((packed)) cluster_t;
 
 /* -- FAT32 Data Structures -- */
 
