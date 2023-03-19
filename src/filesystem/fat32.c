@@ -1,6 +1,7 @@
 #include "fat32.h"
 #include "disk.h"
 #include "../lib-header/stdtype.h"
+#include "../lib-header/stdmem.h"
 
 const uint8_t fs_signature[BLOCK_SIZE] = {
     'C',
@@ -98,10 +99,24 @@ uint32_t cluster_to_lba(uint32_t cluster)
     return cluster * CLUSTER_SIZE;
 }
 
-struct FAT32FileAllocationTable fat_32_file_allocation_table
+struct ClusterBuffer cluster_buffer = 
 {
-    /* data */
+    
 };
+
+struct FAT32FileAllocationTable fat_32_file_allocation_table =
+{
+    .cluster_map = 
+    {
+
+    },
+};
+
+struct FAT32DirectoryEntry fat_32_directory_entry =
+{
+
+};
+
 
 /**
  * Initialize DirectoryTable value with parent DirectoryEntry and directory name
@@ -110,10 +125,7 @@ struct FAT32FileAllocationTable fat_32_file_allocation_table
  * @param name               8-byte char for directory name
  * @param parent_dir_cluster Parent directory cluster number
  */
-void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster)
-{
-    *dir_table[3] =
-}
+void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster);
 
 /**
  * Checking whether filesystem signature is missing or not in boot sector
@@ -122,15 +134,28 @@ void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uin
  */
 bool is_empty_storage(void)
 {
-    return memcmp(FAT32, fs_signature); // TODO, what is boot_sector
-}
+    return !memcmp(&cluster_buffer, &fs_signature, BLOCK_SIZE); // TODO, why incomplete type is not allowed
+}   // notes untuk akbar, gabisa pake read cluster karena dia return void
+
 
 /**
  * Create new FAT32 file system. Will write fs_signature into boot sector and
  * proper FileAllocationTable (contain CLUSTER_0_VALUE, CLUSTER_1_VALUE,
  * and initialized root directory) into cluster number 1
  */
-void create_fat32(void);
+void create_fat32(void)
+{
+    memcpy(&cluster_buffer, &fs_signature, BLOCK_SIZE);
+
+    fat_32_file_allocation_table.cluster_map[0] = CLUSTER_0_VALUE;
+    fat_32_file_allocation_table.cluster_map[1] = CLUSTER_1_VALUE;
+    fat_32_file_allocation_table.cluster_map[2] = FAT32_FAT_END_OF_FILE;
+    // TODO: pindahin dari file allocation table ke cluster number 1 gimana   
+
+    // gatau yg dibawah bener kgk
+    memmove(&cluster_buffer + 1, &fat_32_file_allocation_table, CLUSTER_SIZE);
+
+}
 
 /**
  * Initialize file system driver state, if is_empty_storage() then create_fat32()
