@@ -17,32 +17,32 @@
 typedef struct
 {
     uint32_t block_size;   // Block size of the file system
-    uint16_t blocks_count; // Total number of blocks in the file system
+    uint32_t blocks_count; // Total number of blocks in the file system
     // Add more fields as needed
 } superblock_t;
 
 // Define the inode structure
 typedef struct
 {
-    unsigned short mode;       // File mode (permissions and type)
-    unsigned short uid;        // Owner user ID
-    unsigned int size;         // File size in bytes
-    unsigned int blocks_count; // Total number of blocks used by the file
+    uint16_t mode;         // File mode (permissions and type)
+    uint16_t uid;          // Owner user ID
+    uint32_t size;         // File size in bytes
+    uint32_t blocks_count; // Total number of blocks used by the file
     // Add more fields as needed
 } inode_t;
 
 // Define the directory entry structure
 typedef struct
 {
-    unsigned int inode; // Inode number of the file or directory
-    char name[255];     // Name of the file or directory
+    uint32_t inode;    // Inode number of the file or directory
+    uint8_t name[255]; // Name of the file or directory
     // Add more fields as needed
 } dir_entry_t;
 
 // Define the block structure
 typedef struct
 {
-    char data[BLOCK_SIZE]; // Data stored in the block
+    uint8_t data[BLOCK_SIZE]; // Data stored in the block
 } block_t;
 
 // Define the file system structure
