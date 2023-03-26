@@ -1,5 +1,4 @@
 #include "disk.h"
-#include "../lib-header/disk.h"
 #include "../lib-header/portio.h"
 
 static void ATA_busy_wait()

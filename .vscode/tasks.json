@@ -19,7 +19,7 @@
         {
             "type": "shell",
             "label": "Launch QEMU",
-            "command": "echo Starting QEMU&qemu-system-i386 -s -S -cdrom os2023.iso",
+            "command": "echo Starting QEMU & qemu-system-i386 -s -S -drive file=storage.bin,format=raw,if=ide,index=0,media=disk -cdrom os2023.iso",
             "isBackground": true,
             "dependsOn": "Build OS",
             "options": {
