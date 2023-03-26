@@ -8,6 +8,7 @@
 #include "lib-header/keyboard.h"
 #include "interrupt/idt.h"
 #include "filesystem/fat32.h"
+#include "lib-header/cmos.h"
 
 void kernel_setup(void)
 {
@@ -55,6 +56,15 @@ void kernel_setup(void)
     read(request); // Failed read due not enough buffer size
     request.buffer_size = 5 * CLUSTER_SIZE;
     read(request); // Success read on file "daijoubu"
+
+    uint16_t year;
+    uint16_t month;
+    uint16_t day;
+    uint16_t hour;
+    uint16_t minute;
+    uint16_t second;
+
+    read_rtc(&year, &month, &day, &hour, &minute, &second);
 
     while (TRUE)
         keyboard_state_activate();
