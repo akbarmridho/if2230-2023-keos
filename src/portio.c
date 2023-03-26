@@ -26,17 +26,18 @@ uint8_t in(uint16_t port)
 
 void out16(uint16_t port, uint16_t data)
 {
-    uint8_t firstByte = data & 0xFF;
-    uint8_t secondByte = (data >> 8) & 0xFF;
-
-    out(port, firstByte);
-    out(port, secondByte);
+    __asm__(
+        "outw %0, %1"
+        : // <Empty output operand>
+        : "a"(data), "Nd"(port));
 }
 
 uint16_t in16(uint16_t port)
 {
-    uint8_t secondByte = in(port);
-    uint8_t firstByte = in(port);
-
-    return (secondByte << 8) | firstByte;
+    uint16_t result;
+    __asm__ volatile(
+        "inw %1, %0"
+        : "=a"(result)
+        : "Nd"(port));
+    return result;
 }

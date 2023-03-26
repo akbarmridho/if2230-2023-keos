@@ -420,22 +420,27 @@ int8_t delete(struct FAT32DriverRequest request)
             {
                 // Entry is a directory
                 // Check if the directory is empty or not
-                read_clusters(&driver_state.dir_table_buf, table[i].cluster_low, 1);
-                if (driver_state.dir_table_buf.table[1].user_attribute != UATTR_NOT_EMPTY)
+                struct FAT32DirectoryTable dt;
+                read_clusters(&dt, table[i].cluster_low, 1);
+                for (unsigned int i = 1; i < DIRECTORY_TABLE_SIZE; i++)
                 {
-                    // empty
-                    table[i].user_attribute = !UATTR_NOT_EMPTY;
-                    table[i].undelete = TRUE;
-                    driver_state.fat_table.cluster_map[table[i].cluster_low] = 0;
-                    write_clusters(&driver_state.dir_table_buf, request.parent_cluster_number, 1);
-                    write_clusters(&driver_state.fat_table, 1, 1);
-                    return 0;
+                    if (dt.table[i].user_attribute == UATTR_NOT_EMPTY)
+                    {
+                        // not empty
+                        return 2;
+                    }
                 }
-                else
-                {
-                    // not empty
-                    return 2;
-                }
+                // empty
+                driver_state.fat_table.cluster_map[table[i].cluster_low] = 0;
+                table[i].user_attribute = !UATTR_NOT_EMPTY;
+                table[i].undelete = TRUE;
+
+                // sync parent directory table
+                write_clusters(&driver_state.dir_table_buf, request.parent_cluster_number, 1);
+
+                // sync fat
+                write_clusters(&driver_state.fat_table, 1, 1);
+                return 0;
             }
             else
             {
