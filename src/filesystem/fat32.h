@@ -31,6 +31,7 @@
 /* -- FAT32 DirectoryEntry constants -- */
 #define ATTR_SUBDIRECTORY 0b00010000
 #define UATTR_NOT_EMPTY 0b10101010
+#define DIRECTORY_TABLE_SIZE CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)
 
 // Boot sector signature for this file system "FAT32 - IF2230 edition"
 extern const uint8_t fs_signature[BLOCK_SIZE];

@@ -3,7 +3,7 @@
 
 /**
  * Unsigned integer representing object size
-*/
+ */
 typedef unsigned int size_t;
 
 /**
@@ -38,7 +38,7 @@ typedef signed char int8_t;
 
 /**
  * Naive implementation of boolean (uint8_t)
-*/
+ */
 typedef uint8_t bool;
 #define TRUE 1
 #define FALSE 0
