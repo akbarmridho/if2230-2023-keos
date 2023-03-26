@@ -51,8 +51,8 @@ kernel: $(OBJ_FILES)
 	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/kernel_loader.s -o $(OUTPUT_FOLDER)/kernel_loader.o
 	@$(LIN) $(LFLAGS) ${OBJ_FILES} ${OUTPUT_FOLDER}/intsetup.o $(OUTPUT_FOLDER)/kernel_loader.o -o $(OUTPUT_FOLDER)/kernel
 	@echo Linking object files and generate elf32...
-	# @rm -rf ${DIR}
-	# @rm -f $(OUTPUT_FOLDER)/*.o
+	@rm -rf ${DIR}
+	@rm -f $(OUTPUT_FOLDER)/*.o
 
 iso: dir kernel
 	@mkdir -p $(OUTPUT_FOLDER)/iso/boot/grub

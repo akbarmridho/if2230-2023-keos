@@ -120,7 +120,11 @@ void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uin
     table[0].undelete = FALSE;
     table[0].cluster_low = parent_dir_cluster & 0xffff;
     table[0].cluster_high = (parent_dir_cluster >> 16) & 0xffff;
-    table[1].user_attribute = !UATTR_NOT_EMPTY;
+
+    for (int i = 1; i < 64; i++)
+    {
+        table[i].user_attribute = !UATTR_NOT_EMPTY;
+    }
 
     driver_state.fat_table.cluster_map[parent_dir_cluster] = FAT32_FAT_END_OF_FILE;
     write_clusters(&driver_state.fat_table, 1, 1);
