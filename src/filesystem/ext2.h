@@ -4,12 +4,13 @@
 #include "disk.h"
 #include "../lib-header/stdtype.h"
 
+#define BOOT_SECTOR 0
 #define DISK_SPACE 4194304      // 4MB
-#define BLOCK_SIZE 1024         // 1KB
 #define EXT2_SUPER_MAGIC 0xEF53 // value for superblock magic
-#define BLOCKS_PER_GROUP 128
-#define GROUPS_COUNT DISK_SPACE / BLOCKS_PER_GROUP / BLOCK_SIZE
-// GROUPS_COUNT * 32 must be maximum BLOCK_SIZE
+#define INODE_SIZE sizeof(struct EXT2INode)
+#define INODES_PER_GROUP BLOCK_SIZE / INODE_SIZE
+#define GROUPS_COUNT BLOCK_SIZE / 32
+#define BLOCKS_PER_GROUP DISK_SPACE / GROUPS_COUNT / BLOCK_SIZE
 
 // inode constants
 // modes
@@ -19,11 +20,6 @@
 // file type constant
 #define EXT2_FT_REG_FILE 1
 #define EXT2_FT_DIR 2
-
-struct EXT2BlockBuffer
-{
-    uint8_t buf[BLOCK_SIZE];
-} __attribute__((packed));
 
 struct EXT2Superblock
 {
@@ -61,13 +57,17 @@ struct EXT2BGDTable
 
 struct EXT2INode
 {
-    uint16_t mode;       // for now just files and directories
-    uint32_t lower_size; // lower 32 bit for filesize
-    uint32_t ctime;      // created time
-    uint32_t mtime;      // modified time
-    uint32_t dtime;      // deleted time
-    uint32_t blocks;     // total number of 512-bytes (not same as BLOCK_SIZE) block reserved to node
-    uint32_t flags;      // not used for now
+    uint16_t mode;        // for now just files and directories
+    uint32_t size_low;    // lower 32 bit for filesize
+    uint32_t atime;       // access time, not used
+    uint32_t ctime;       // created time
+    uint32_t mtime;       // modified time
+    uint32_t dtime;       // deleted time
+    uint32_t gid;         // not used
+    uint16_t links_count; // not used
+    uint32_t blocks;      // total number of 512-bytes (not same as BLOCK_SIZE) block reserved to node
+    uint32_t osd1;        // not used
+    uint32_t flags;       // not used for now
     /* 15 x 32bit block numbers pointing to the blocks containing the data for this inode. The first 12 blocks are direct blocks. The 13th entry in this array is the block number of the first indirect block; which is a block containing an array of block ID containing the data. Therefore, the 13th block of the file will be the first block ID contained in the indirect block. With a 1KiB block size, blocks 13 to 268 of the file data are contained in this indirect block.
 
     The 14th entry in this array is the block number of the first doubly-indirect block; which is a block containing an array of indirect block IDs, with each of those indirect blocks containing an array of blocks containing the data. In a 1KiB block size, there would be 256 indirect blocks per doubly-indirect block, with 256 direct blocks per indirect block for a total of 65536 blocks per doubly-indirect block.
@@ -77,9 +77,15 @@ struct EXT2INode
 
     uint32_t generation; // file version, not used for now
     uint32_t file_acl;   // not used for now
-    uint32_t dir_acl;    // not used for now
+    uint32_t size_high;  // not used for now
     uint32_t faddr;      // location of the file fragment
+    uint32_t osd2[3];
 } __attribute__((packed));
+
+struct EXT2INodeTable
+{
+    struct EXT2INode table[INODES_PER_GROUP];
+};
 
 // directory
 struct EXT2DirectoryEntry
@@ -90,5 +96,31 @@ struct EXT2DirectoryEntry
     uint8_t file_type;
     char *name;
 } __attribute__((packed));
+
+uint32_t inode_to_bgd(uint32_t inode);
+
+uint32_t inode_to_local(uint32_t inode);
+
+void init_directory_table(struct EXT2INode *node, uint32_t inode, uint32_t parent_inode);
+
+bool is_empty_storage(void);
+
+void create_ext2(void);
+
+void initialize_filesystem_ext2(void);
+
+struct EXT2DirectoryEntry *get_directory_entry(void *ptr, uint32_t offset);
+
+uint16_t get_directory_record_length(uint8_t name_len);
+
+struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry);
+
+void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd, uint32_t blocks);
+
+void sync_node(struct EXT2INode *node, uint32_t inode);
+
+uint32_t allocate_node(void);
+
+void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found);
 
 #endif
