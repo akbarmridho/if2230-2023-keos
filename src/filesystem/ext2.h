@@ -9,7 +9,7 @@
 #define EXT2_SUPER_MAGIC 0xEF53 // value for superblock magic
 #define INODE_SIZE sizeof(struct EXT2INode)
 #define INODES_PER_GROUP BLOCK_SIZE / INODE_SIZE
-#define GROUPS_COUNT BLOCK_SIZE / 32
+#define GROUPS_COUNT BLOCK_SIZE / sizeof(struct EXT2BGD)
 #define BLOCKS_PER_GROUP DISK_SPACE / GROUPS_COUNT / BLOCK_SIZE
 
 // inode constants
@@ -20,6 +20,17 @@
 // file type constant
 #define EXT2_FT_REG_FILE 1
 #define EXT2_FT_DIR 2
+#define EXT2_FT_NEXT 3
+
+struct EXT2DriverRequest
+{
+    void *buf;
+    char *name;
+    uint8_t name_len;
+    char ext[3];
+    uint32_t inode;
+    uint32_t buffer_size;
+} __attribute__((packed));
 
 struct EXT2Superblock
 {
@@ -58,7 +69,7 @@ struct EXT2BGDTable
 struct EXT2INode
 {
     uint16_t mode;        // for now just files and directories
-    uint32_t size_low;    // lower 32 bit for filesize
+    uint32_t size_low;    // lower 32 bit for filesize, for now only use lower bit (size maximum 2^32-1 aka 4GB), org ukuran disk-nya aja cuma 4MB aowkaowkawo
     uint32_t atime;       // access time, not used
     uint32_t ctime;       // created time
     uint32_t mtime;       // modified time
@@ -88,12 +99,17 @@ struct EXT2INodeTable
 };
 
 // directory
+
+// directory entry is a linked list that has dynamic size of each item (depends on name_len), so 1 block of directory table can consist of various entries length
+// if one block of directory table already full, the last element will have file_type of next to the next directory table (linkedlist of linkedlist) so subdirectory count can be infinity (kind of)
+// this is customly designed by Keos Team :)
 struct EXT2DirectoryEntry
 {
-    uint32_t inode;   // value 0 indicate entry not used
+    uint32_t inode;   // value 0 indicate entry not used, if file_type is next, this is not inode but block index
     uint16_t rec_len; // displacement to the next directory entry from the start of the current directory entry.
     uint8_t name_len;
     uint8_t file_type;
+    char ext[3];
     char *name;
 } __attribute__((packed));
 
@@ -122,5 +138,19 @@ void sync_node(struct EXT2INode *node, uint32_t inode);
 uint32_t allocate_node(void);
 
 void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found);
+
+uint32_t get_directory_first_child_offset(void *ptr);
+
+void load_inode_blocks(void *ptr, uint32_t block[15], uint32_t size);
+
+uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t depth);
+
+int8_t read_directory(struct EXT2DriverRequest request);
+
+int8_t read(struct EXT2DriverRequest request);
+
+int8_t write(struct EXT2DriverRequest request);
+
+int8_t delete(struct EXT2DriverRequest request);
 
 #endif
