@@ -53,3 +53,55 @@ void read_rtc(uint16_t *year, uint16_t *month, uint16_t *day, uint16_t *hour, ui
     if (*year < CURRENT_YEAR)
         *year += 100;
 }
+
+uint32_t get_timestamp()
+{
+    uint16_t year;
+    uint16_t month;
+    uint16_t day;
+    uint16_t hour;
+    uint16_t minute;
+    uint16_t second;
+
+    read_rtc(&year, &month, &day, &hour, &minute, &second);
+
+    // calculate days since epochs
+    uint32_t time = (year - 1970) * 365;
+    uint32_t leapyears = year - 1969;
+
+    if (month > 2)
+    {
+        leapyears += 1;
+    }
+
+    leapyears = leapyears / 4;
+    time += leapyears;
+
+    uint32_t days[] = {
+        0,
+        31,                                                   // days till jan
+        31 + 28,                                              // days till feb
+        31 + 28 + 31,                                         // days till march
+        31 + 28 + 31 + 30,                                    // days till april
+        31 + 28 + 31 + 30 + 31,                               // days till may
+        31 + 28 + 31 + 30 + 31 + 30,                          // days till june
+        31 + 28 + 31 + 30 + 31 + 30 + 31,                     // days till july
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 30,                // days till august
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 30 + 31,           // days till sept
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 30 + 31 + 30,      // days till oct
+        31 + 28 + 31 + 30 + 31 + 30 + 31 + 30 + 31 + 30 + 31, // days till nov
+    };
+
+    time += days[month - 1];
+    time += day - 1;
+
+    // calculate time
+    time *= 24;
+    time += hour;
+    time *= 60;
+    time += minute;
+    time *= 60;
+    time += second;
+
+    return time;
+}

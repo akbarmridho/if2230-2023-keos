@@ -17,4 +17,6 @@ uint8_t get_RTC_register(int32_t reg);
 
 void read_rtc(uint16_t *year, uint16_t *month, uint16_t *day, uint16_t *hour, uint16_t *minute, uint16_t *second);
 
+uint32_t get_timestamp();
+
 #endif
