@@ -771,6 +771,9 @@ int8_t write(struct EXT2DriverRequest request)
   entry->name_len = request.name_len;
   entry->rec_len = get_directory_record_length(entry->name_len);
 
+  // shift linked list terminator
+  get_next_directory_entry(entry)->inode = 0;
+
   if (request.buffer_size == 0)
   {
     // create folder
@@ -795,7 +798,7 @@ int8_t write(struct EXT2DriverRequest request)
     // TODO: handle indirect block
     for (uint32_t i = 0; i < node->blocks; i++)
     {
-      write_blocks(request.buf + i * BLOCK_SIZE, node->block[i], 1);
+      write_blocks(request.buf + i * BLOCK_SIZE, new_node.block[i], 1);
     }
   }
 
@@ -841,6 +844,8 @@ int8_t delete(struct EXT2DriverRequest request)
   // search the requested entry
   while (!found)
   {
+    if (entry->inode == 0)
+      return 1;
     if (entry->file_type == EXT2_FT_NEXT)
     {
       // continue to next directory table list
@@ -854,7 +859,7 @@ int8_t delete(struct EXT2DriverRequest request)
       entry = get_directory_entry(&block, offset);
       continue;
     }
-    if (entry->inode != 0 && is_directory_entry_same(entry, request, request.is_dir))
+    if (is_directory_entry_same(entry, request, !request.is_dir))
     {
       found = TRUE;
     }

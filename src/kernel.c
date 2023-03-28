@@ -26,7 +26,7 @@ void kernel_setup(void)
     {
         for (uint32_t j = 0; j < BLOCK_SIZE; j++)
         {
-            bbuf[i].buf[j] = i + 'a';
+            bbuf[i].buf[j] = 'a';
         }
     }
 
@@ -39,30 +39,35 @@ void kernel_setup(void)
         .name_len = 9,
     };
 
+    char ikanaide[9] = "ikanaide";
+
     write(request); // Create folder "ikanaide"
     memcpy(request.name, "kano1\0\0\0", 8);
     request.name_len = 6;
     write(request); // Create folder "kano1"
-    memcpy(request.name, "ikanaide", 8);
+    memcpy(request.name, ikanaide, 9);
     request.name_len = 9;
     request.is_dir = TRUE;
     delete (request); // Delete first folder, thus creating hole in FS
 
-    memcpy(request.name, "daijoubu", 8);
+    memcpy(request.name, "daijoubu", 9);
     request.name_len = 9;
-    request.buffer_size = 10 * BLOCK_SIZE;
+    char to_write[] = "wangy wangy oessssss";
+    request.buf = (void *)to_write;
+    request.buffer_size = 21;
     write(request); // Create fragmented file "daijoubu"
 
     struct BlockBuffer readbbuf[4];
     request.buf = readbbuf;
     read(request);
-    read_blocks(&readbbuf, 2, 1);
+    read_blocks(&readbbuf, 9, 1);
     // If read properly, readbbuf should filled with 'a'
 
     request.buf = bbuf;
-    request.buffer_size = BLOCK_SIZE;
+    request.buffer_size = 5;
+
     read(request); // Failed read due not enough buffer size
-    request.buffer_size = 10 * BLOCK_SIZE;
+    request.buffer_size = 21;
     read(request); // Success read on file "daijoubu"
 
     uint16_t year;
