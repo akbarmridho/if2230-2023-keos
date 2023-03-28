@@ -8,9 +8,13 @@
 #define DISK_SPACE 4194304u     // 4MB
 #define EXT2_SUPER_MAGIC 0xEF53 // value for superblock magic
 #define INODE_SIZE sizeof(struct EXT2INode)
-#define INODES_PER_GROUP (BLOCK_SIZE / INODE_SIZE)
-#define GROUPS_COUNT (BLOCK_SIZE / sizeof(struct EXT2BGD))
-#define BLOCKS_PER_GROUP DISK_SPACE / BLOCK_SIZE / GROUPS_COUNT
+#define INODES_PER_TABLE (BLOCK_SIZE / INODE_SIZE)
+#define GROUPS_COUNT (BLOCK_SIZE / sizeof(struct EXT2BGD) / 2u) // 2u can be tweaked
+#define BLOCKS_PER_GROUP (DISK_SPACE / BLOCK_SIZE / GROUPS_COUNT)
+#define INODES_TABLE_BLOCK_COUNT 16u // can be tweaked
+#define INODES_PER_GROUP (INODES_PER_TABLE * INODES_TABLE_BLOCK_COUNT)
+
+// max files/folder number that can be container is INODES_PER_GROUP * GROUP_COUNT
 
 // inode constants
 // modes
@@ -139,7 +143,9 @@ uint16_t get_directory_record_length(uint8_t name_len);
 
 struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry);
 
-void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd);
+uint32_t map_node_blocks(void *ptr, uint32_t blocks, uint32_t *locations, uint32_t *mapped_count, uint8_t depth);
+
+void allocate_node_blocks(void *ptr, struct EXT2INode *node, uint32_t preferred_bgd);
 
 void sync_node(struct EXT2INode *node, uint32_t inode);
 
@@ -157,7 +163,7 @@ uint32_t get_directory_first_child_offset(void *ptr);
 
 void load_inode_blocks(void *ptr, void *_block, uint32_t size);
 
-uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t depth);
+uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint32_t size, uint8_t depth);
 
 bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2DriverRequest request, bool is_file);
 

@@ -57,11 +57,19 @@ void kernel_setup(void)
     request.buffer_size = 21;
     write(request); // Create fragmented file "daijoubu"
 
-    struct BlockBuffer readbbuf[4];
+    struct BlockBuffer readbbuf[20];
     request.buf = readbbuf;
     read(request);
     read_blocks(&readbbuf, 9, 1);
-    // If read properly, readbbuf should filled with 'a'
+    // If read properly, readbbuf should starts with 'wangy wangy oessssss'
+    for (int i = 0; i < 20; i++)
+    {
+        memset(readbbuf[i].buf, 'z' - i, BLOCK_SIZE);
+    }
+    request.name = "testbigfile";
+    request.name_len = 13;
+    request.buffer_size = BLOCK_SIZE * 20;
+    write(request);
 
     request.buf = bbuf;
     request.buffer_size = 5;
