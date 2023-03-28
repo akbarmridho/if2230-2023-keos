@@ -42,24 +42,23 @@ for creating a disk image, use `make disk` command, this will create a new disk 
 │        
 ├─── other
 │        
-├─── src
-│     │    cmos.c
-│     │    framebuffer.c
-│     │    gdt.c
-│     │    kernel_loader.s
-│     │    kernel.c
-│     │    keyboard.c
-│     │    linker.ld
-│     │    math.c
-│     │    menu.lst
-│     │    portio.c
-│     │    stdmem.c
-│     │    string.c
-│     │    
-│     ├─── Filesystem
-│     ├─── Interrupt
-│     └─── lib-header
-└─── test
-         visualizer.png
+└─── src
+      │    cmos.c
+      │    framebuffer.c
+      │    gdt.c
+      │    kernel_loader.s
+      │    kernel.c
+      │    keyboard.c
+      │    linker.ld
+      │    math.c
+      │    menu.lst
+      │    portio.c
+      │    stdmem.c
+      │    string.c
+      │    
+      ├─── Filesystem
+      ├─── Interrupt
+      └─── lib-header
+
 ```
 
