@@ -30,6 +30,9 @@ struct EXT2DriverRequest
     char ext[3];
     uint32_t inode;
     uint32_t buffer_size;
+
+    // for delete
+    bool is_dir;
 } __attribute__((packed));
 
 struct EXT2Superblock
@@ -127,6 +130,8 @@ void initialize_filesystem_ext2(void);
 
 struct EXT2DirectoryEntry *get_directory_entry(void *ptr, uint32_t offset);
 
+bool is_directory_empty(uint32_t inode);
+
 uint16_t get_directory_record_length(uint8_t name_len);
 
 struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry);
@@ -136,6 +141,10 @@ void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd);
 void sync_node(struct EXT2INode *node, uint32_t inode);
 
 uint32_t allocate_node(void);
+
+void deallocate_node(uint32_t inode);
+
+void deallocate_blocks(uint32_t *locations, uint32_t blocks);
 
 void search_blocks(uint32_t preferred_bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count);
 
