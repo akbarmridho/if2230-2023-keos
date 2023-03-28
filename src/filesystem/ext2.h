@@ -4,8 +4,8 @@
 #include "disk.h"
 #include "../lib-header/stdtype.h"
 
-#define BOOT_SECTOR 0
-#define DISK_SPACE 4194304      // 4MB
+#define BOOT_SECTOR 0u
+#define DISK_SPACE 4194304u     // 4MB
 #define EXT2_SUPER_MAGIC 0xEF53 // value for superblock magic
 #define INODE_SIZE sizeof(struct EXT2INode)
 #define INODES_PER_GROUP BLOCK_SIZE / INODE_SIZE
@@ -131,13 +131,15 @@ uint16_t get_directory_record_length(uint8_t name_len);
 
 struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry);
 
-void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd, uint32_t blocks);
+void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd);
 
 void sync_node(struct EXT2INode *node, uint32_t inode);
 
 uint32_t allocate_node(void);
 
-void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found);
+void search_blocks(uint32_t preferred_bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count);
+
+void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count);
 
 uint32_t get_directory_first_child_offset(void *ptr);
 
@@ -146,6 +148,8 @@ void load_inode_blocks(void *ptr, uint32_t block[15], uint32_t size);
 uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t depth);
 
 int8_t read_directory(struct EXT2DriverRequest request);
+
+bool is_directory_entry_same(struct EXT2DirectoryEntry *, struct EXT2DriverRequest request, bool is_file);
 
 int8_t read(struct EXT2DriverRequest request);
 

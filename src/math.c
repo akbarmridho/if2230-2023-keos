@@ -1,8 +1,9 @@
 #include "./lib-header/math.h"
+#include "./lib-header/stdtype.h"
 
-int divceil(int pembilang, int penyebut)
+uint32_t divceil(uint32_t pembilang, uint32_t penyebut)
 {
-  int cmp = pembilang / penyebut;
+  uint32_t cmp = pembilang / penyebut;
 
   if (pembilang % penyebut == 0)
     return cmp;

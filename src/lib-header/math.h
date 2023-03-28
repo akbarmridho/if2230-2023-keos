@@ -1,4 +1,4 @@
 
-int divceil(int pembilang, int penyebut);
+uint32_t divceil(uint32_t pembilang, uint32_t penyebut);
 
 int ceil(float a);

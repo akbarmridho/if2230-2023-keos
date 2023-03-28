@@ -41,14 +41,14 @@ void init_directory_table(struct EXT2INode *node, uint32_t inode, uint32_t paren
   struct EXT2DirectoryEntry *first_file = get_next_directory_entry(parent_table);
   first_file->inode = 0;
 
-  node->mode = EXT2_FT_DIR;
+  node->mode = EXT2_S_IFDIR;
   node->size_low = 0;
   node->size_high = 0;
 
   // TODO: time
 
   node->blocks = 1;
-  allocate_node_blocks(node, inode_to_bgd(inode), 1);
+  allocate_node_blocks(node, inode_to_bgd(inode));
 
   write_blocks(&block, node->block[0], 1);
   sync_node(node, inode);
@@ -138,22 +138,15 @@ struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *e
   return get_directory_entry(entry, entry->rec_len);
 }
 
-void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd, uint32_t blocks)
+void allocate_node_blocks(struct EXT2INode *node, uint32_t preferred_bgd)
 {
-  uint32_t locations[blocks];
-  uint32_t found = 0;
-  if (bgd_table.table[preferred_bgd].free_blocks_count > 0)
-  {
-    search_blocks_in_bgd(preferred_bgd, locations, blocks, &found);
-  }
-  for (int i = 0; i < GROUPS_COUNT && found < blocks; i++)
-  {
-    if (i == preferred_bgd)
-      continue;
-    search_blocks_in_bgd(locations, blocks, &found, i);
-  }
+  uint32_t locations[node->blocks];
+  uint32_t found_count = 0;
 
-  for (int i = 0; i < blocks; i++)
+  search_blocks(preferred_bgd, locations, node->blocks, &found_count);
+
+  // TODO: handle indirect block
+  for (int i = 0; i < node->blocks; i++)
   {
     node->block[i] = locations[i];
   }
@@ -211,7 +204,25 @@ uint32_t allocate_node(void)
   return inode;
 }
 
-void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found)
+void search_blocks(uint32_t preferred_bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count)
+{
+
+  // search in preferred bgd first
+  if (bgd_table.table[preferred_bgd].free_blocks_count > 0)
+  {
+    search_blocks_in_bgd(preferred_bgd, locations, blocks, &found_count);
+  }
+
+  // search in other than preferred bgd
+  for (int i = 0; i < GROUPS_COUNT && found_count < blocks; i++)
+  {
+    if (i == preferred_bgd)
+      continue;
+    search_blocks_in_bgd(locations, blocks, &found_count, i);
+  }
+}
+
+void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count)
 {
   if (bgd_table.table[bgd].free_blocks_count == 0)
     return;
@@ -219,7 +230,13 @@ void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, ui
   // search free blocks
   read_blocks(&block_buffer, bgd_table.table[bgd].block_bitmap, 1);
   uint32_t bgd_offset = bgd * BLOCKS_PER_GROUP;
-  for (int i = 0; i < BLOCKS_PER_GROUP && *found < blocks; i++)
+  uint32_t allocated = 0;
+
+  // loop until found all the blocks needed or there is no block left
+  for (int i = 0; i < BLOCKS_PER_GROUP &&
+                  *found_count < blocks &&
+                  allocated < bgd_table.table[bgd].free_blocks_count;
+       i++)
   {
     uint8_t byte = block_buffer.buf[i / 8];
     uint8_t offset = 7 - i % 8;
@@ -227,9 +244,20 @@ void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, ui
     {
       // set flag of the block bitmap
       block_buffer.buf[i / 8] |= 1u << offset;
-      locations[*found] = bgd_offset + i;
-      *found++;
+      locations[*found_count] = bgd_offset + i;
+      *found_count++;
+      allocated++;
     }
+  }
+
+  if (allocated > 0)
+  {
+    // update bgd and the block bitmap
+    bgd_table.table[bgd].free_blocks_count -= allocated;
+
+    write_blocks(&block_buffer, bgd_table.table[bgd].block_bitmap, 1);
+
+    write_blocks(&bgd_table, 2, 1);
   }
 }
 
@@ -419,7 +447,147 @@ int8_t read(struct EXT2DriverRequest request)
       load_inode_blocks(request.buf, node->block, node->size_low);
       return 0;
     }
+
+    // get next linked list item
+    offset += entry->rec_len;
+    entry = get_directory_entry(block.buf, offset);
   }
 
   return 2;
+}
+
+int8_t write(struct EXT2DriverRequest request)
+{
+  uint32_t bgd = inode_to_bgd(request.inode);
+  uint32_t local_idx = inode_to_local(request.inode);
+
+  // get node corresponding to request.inode
+  read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, 1);
+
+  struct EXT2INode *node = &inode_table_buf.table[local_idx];
+
+  if (node->mode != EXT2_S_IFDIR)
+  {
+    // parent folder invalid
+    return 2;
+  }
+
+  uint32_t block_num = node->block[0];
+
+  // read the directory entry
+  struct BlockBuffer block;
+  read_blocks(&block, block_num, 1);
+
+  // get the first children entry
+  uint32_t offset = get_directory_first_child_offset(block.buf);
+  struct EXT2DirectoryEntry *entry = get_directory_entry(block.buf, offset);
+
+  uint16_t space_needed = get_directory_record_length(request.name_len);
+
+  // need space for last item to be pointer to next directory table, so maximum space in block will be this
+  uint16_t space_total = BLOCK_SIZE - get_directory_record_length(0);
+
+  bool found = FALSE;
+
+  // search for space in directory
+  while (!found)
+  {
+    if (entry->file_type == EXT2_FT_NEXT)
+    {
+      // continue to next directory table list
+      block_num = entry->inode;
+      read_blocks(&block, block_num, 1);
+      offset = 0;
+      entry = get_directory_entry(block.buf, offset);
+      continue;
+    }
+    if (entry->inode != 0)
+    {
+      if (is_directory_entry_same(entry, request, request.buffer_size != 0))
+      {
+        // folder / file already exist
+        return 1;
+      }
+      // get next linked list item
+      offset += entry->rec_len;
+      entry = get_directory_entry(block.buf, offset);
+      continue;
+    }
+
+    // directory entry is available
+    if (offset + space_needed <= space_total)
+    {
+      // can be used
+      found = TRUE;
+    }
+    else
+    {
+      // allocate new directory table
+      uint32_t next_block;
+      uint32_t found_count = 0;
+      search_blocks(bgd, &next_block, 1, &found_count);
+
+      if (found_count == 0)
+      {
+        // not found any block available
+        return -1;
+      }
+
+      entry->inode = next_block;
+      entry->name_len = 0;
+      entry->rec_len = get_directory_record_length(0);
+      entry->file_type = EXT2_FT_NEXT;
+
+      // update prev linked list directory
+      write_blocks(&block, block_num, 1);
+
+      // load new directory table
+      read_blocks(&block, next_block, 1);
+      found = TRUE;
+      block_num = next_block;
+      offset = 0;
+      entry = get_directory_entry(block.buf, 0);
+    }
+  }
+
+  // yey got em
+  struct EXT2INode new_node;
+  uint32_t new_inode = allocate_node();
+  entry->inode = new_inode;
+  memcpy(entry->name, request.name, request.name_len);
+  entry->name_len = request.name_len;
+  entry->rec_len = get_directory_record_length(entry->name_len);
+
+  if (request.buffer_size == 0)
+  {
+    // create folder
+    entry->file_type = EXT2_FT_DIR;
+    init_directory_table(&new_node, new_inode, request.inode);
+  }
+  else
+  {
+    entry->file_type = EXT2_FT_REG_FILE;
+    memcpy(entry->ext, request.ext, 3);
+    node->mode = EXT2_S_IFREG;
+    node->size_low = request.buffer_size;
+    node->size_high = 0;
+
+    // TODO: time
+
+    node->blocks = divceil(request.buffer_size, BLOCK_SIZE);
+
+    allocate_node_blocks(&new_node, inode_to_bgd(new_inode));
+    sync_node(&node, new_inode);
+
+    // TODO: handle indirect block
+    for (uint32_t i = 0; i < node->blocks; i++)
+    {
+      write_blocks(request.buf + i * BLOCK_SIZE, node->block[i], 1);
+    }
+  }
+
+  // update directory entry
+  write_blocks(&block, block_num, 1);
+
+  return 0;
 }
