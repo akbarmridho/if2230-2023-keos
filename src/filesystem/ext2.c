@@ -334,6 +334,28 @@ uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t
   return allocated;
 }
 
+bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2DriverRequest request, bool is_file)
+{
+  if (is_file && entry->file_type != EXT2_FT_REG_FILE)
+    return FALSE;
+  if (!is_file && entry->file_type != EXT2_FT_DIR)
+    return FALSE;
+  // name length must same
+  if (request.name_len != entry->name_len)
+    return FALSE;
+
+  // entry name must same
+  if (memcmp(request.name, entry->name, request.name_len))
+    return FALSE;
+
+  // if folder, no need to check ext
+  if (!is_file)
+    return TRUE;
+
+  // check extension
+  return !memcmp(request.ext, entry->ext, 3);
+}
+
 int8_t read_directory(struct EXT2DriverRequest request)
 {
   uint32_t bgd = inode_to_bgd(request.inode);
@@ -369,10 +391,8 @@ int8_t read_directory(struct EXT2DriverRequest request)
       entry = get_directory_entry(block.buf, offset);
       continue;
     }
-    // check if entry is a directory, same name length, and same name
-    if (entry->file_type == EXT2_FT_DIR &&
-        entry->name_len == request.name_len &&
-        !memcmp(entry->name, request.name, request.name_len))
+
+    if (is_directory_entry_same(entry, request, FALSE))
     {
       // found
       bgd = inode_to_bgd(entry->inode);
@@ -427,11 +447,8 @@ int8_t read(struct EXT2DriverRequest request)
       entry = get_directory_entry(block.buf, offset);
       continue;
     }
-    // check if entry is a file, same name length, same name, same file extension
-    if (entry->file_type == EXT2_FT_REG_FILE &&
-        entry->name_len == request.name_len &&
-        !memcmp(entry->name, request.name, request.name_len) &&
-        !memcmp(entry->ext, request.ext, 3))
+
+    if (is_directory_entry_same(entry, request, TRUE))
     {
       // found
       bgd = inode_to_bgd(entry->inode);

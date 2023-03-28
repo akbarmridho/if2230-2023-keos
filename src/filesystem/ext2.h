@@ -147,9 +147,9 @@ void load_inode_blocks(void *ptr, uint32_t block[15], uint32_t size);
 
 uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t depth);
 
-int8_t read_directory(struct EXT2DriverRequest request);
+bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2DriverRequest request, bool is_file);
 
-bool is_directory_entry_same(struct EXT2DirectoryEntry *, struct EXT2DriverRequest request, bool is_file);
+int8_t read_directory(struct EXT2DriverRequest request);
 
 int8_t read(struct EXT2DriverRequest request);
 
