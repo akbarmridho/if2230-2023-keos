@@ -10,7 +10,7 @@
 #define ATA_STATUS_DF 0x20
 #define ATA_STATUS_ERR 0x01
 
-#define BLOCK_SIZE 1024u
+#define BLOCK_SIZE 512u
 #define HALF_BLOCK_SIZE (BLOCK_SIZE / 2)
 
 // Block buffer data type - @param buf Byte buffer with size of BLOCK_SIZE

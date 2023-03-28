@@ -8,26 +8,26 @@
 #define DISK_SPACE 4194304u     // 4MB
 #define EXT2_SUPER_MAGIC 0xEF53 // value for superblock magic
 #define INODE_SIZE sizeof(struct EXT2INode)
-#define INODES_PER_GROUP BLOCK_SIZE / INODE_SIZE
-#define GROUPS_COUNT BLOCK_SIZE / sizeof(struct EXT2BGD)
-#define BLOCKS_PER_GROUP DISK_SPACE / GROUPS_COUNT / BLOCK_SIZE
+#define INODES_PER_GROUP (BLOCK_SIZE / INODE_SIZE)
+#define GROUPS_COUNT (BLOCK_SIZE / sizeof(struct EXT2BGD))
+#define BLOCKS_PER_GROUP DISK_SPACE / BLOCK_SIZE / GROUPS_COUNT
 
 // inode constants
 // modes
-#define EXT2_S_IFREG 0x8000 // regular file
-#define EXT2_S_IFDIR 0x4000 // directory
+#define EXT2_S_IFREG 0x8000u // regular file
+#define EXT2_S_IFDIR 0x4000u // directory
 
 // file type constant
-#define EXT2_FT_REG_FILE 1
-#define EXT2_FT_DIR 2
-#define EXT2_FT_NEXT 3
+#define EXT2_FT_REG_FILE 1u
+#define EXT2_FT_DIR 2u
+#define EXT2_FT_NEXT 3u
 
 struct EXT2DriverRequest
 {
     void *buf;
     char *name;
     uint8_t name_len;
-    char ext[3];
+    char ext[4];
     uint32_t inode;
     uint32_t buffer_size;
 
@@ -112,9 +112,12 @@ struct EXT2DirectoryEntry
     uint16_t rec_len; // displacement to the next directory entry from the start of the current directory entry.
     uint8_t name_len;
     uint8_t file_type;
-    char ext[3];
-    char *name;
+    char ext[4];
+
+    // name array separated because it is dynamic
 } __attribute__((packed));
+
+char *get_entry_name(void *entry);
 
 uint32_t inode_to_bgd(uint32_t inode);
 
@@ -144,7 +147,7 @@ uint32_t allocate_node(void);
 
 void deallocate_node(uint32_t inode);
 
-void deallocate_blocks(uint32_t *locations, uint32_t blocks);
+void deallocate_blocks(void *_locations, uint32_t blocks);
 
 void search_blocks(uint32_t preferred_bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count);
 
@@ -152,7 +155,7 @@ void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, ui
 
 uint32_t get_directory_first_child_offset(void *ptr);
 
-void load_inode_blocks(void *ptr, uint32_t block[15], uint32_t size);
+void load_inode_blocks(void *ptr, void *_block, uint32_t size);
 
 uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint8_t depth);
 

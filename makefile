@@ -9,7 +9,8 @@ OUTPUT_FOLDER = bin
 ISO_NAME      = os2023
 
 # For compiling all c files
-SRC_FILES = $(shell find ${SOURCE_FOLDER} -name '*.c')
+EXCLUDED_FILES = $(SOURCE_FOLDER)/filesystem/fat32.c
+SRC_FILES = $(filter-out $(EXCLUDED_FILES), $(shell find ${SOURCE_FOLDER} -name '*.c'))
 OBJ_FILES := $(patsubst $(SOURCE_FOLDER)/%.c,$(OUTPUT_FOLDER)/%.o,$(SRC_FILES))
 DIR = $(filter-out src, $(patsubst $(SOURCE_FOLDER)/%, $(OUTPUT_FOLDER)/%, $(shell find $(SOURCE_FOLDER) -type d)))
 

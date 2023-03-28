@@ -7,7 +7,7 @@
 #include "interrupt/interrupt.h"
 #include "lib-header/keyboard.h"
 #include "interrupt/idt.h"
-#include "filesystem/fat32.h"
+#include "filesystem/ext2.h"
 #include "lib-header/cmos.h"
 
 void kernel_setup(void)
@@ -19,42 +19,50 @@ void kernel_setup(void)
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
 
-    initialize_filesystem_fat32();
+    initialize_filesystem_ext2();
 
-    struct ClusterBuffer cbuf[5];
-    for (uint32_t i = 0; i < 5; i++)
+    struct BlockBuffer bbuf[10];
+    for (uint32_t i = 0; i < 10; i++)
     {
-        for (uint32_t j = 0; j < CLUSTER_SIZE; j++)
+        for (uint32_t j = 0; j < BLOCK_SIZE; j++)
         {
-            cbuf[i].buf[j] = i + 'a';
+            bbuf[i].buf[j] = i + 'a';
         }
     }
 
-    struct FAT32DriverRequest request = {
-        .buf = cbuf,
+    struct EXT2DriverRequest request = {
+        .buf = bbuf,
         .name = "ikanaide",
         .ext = "uwu",
-        .parent_cluster_number = ROOT_CLUSTER_NUMBER,
+        .inode = 1,
         .buffer_size = 0,
+        .name_len = 9,
     };
 
     write(request); // Create folder "ikanaide"
     memcpy(request.name, "kano1\0\0\0", 8);
+    request.name_len = 6;
     write(request); // Create folder "kano1"
     memcpy(request.name, "ikanaide", 8);
+    request.name_len = 9;
+    request.is_dir = TRUE;
     delete (request); // Delete first folder, thus creating hole in FS
 
     memcpy(request.name, "daijoubu", 8);
-    request.buffer_size = 5 * CLUSTER_SIZE;
+    request.name_len = 9;
+    request.buffer_size = 10 * BLOCK_SIZE;
     write(request); // Create fragmented file "daijoubu"
 
-    struct ClusterBuffer readcbuf;
-    read_clusters(&readcbuf, ROOT_CLUSTER_NUMBER + 1, 1);
-    // If read properly, readcbuf should filled with 'a'
+    struct BlockBuffer readbbuf[4];
+    request.buf = readbbuf;
+    read(request);
+    read_blocks(&readbbuf, 2, 1);
+    // If read properly, readbbuf should filled with 'a'
 
-    request.buffer_size = CLUSTER_SIZE;
+    request.buf = bbuf;
+    request.buffer_size = BLOCK_SIZE;
     read(request); // Failed read due not enough buffer size
-    request.buffer_size = 5 * CLUSTER_SIZE;
+    request.buffer_size = 10 * BLOCK_SIZE;
     read(request); // Success read on file "daijoubu"
 
     uint16_t year;
