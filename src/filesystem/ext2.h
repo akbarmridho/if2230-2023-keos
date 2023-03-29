@@ -77,7 +77,7 @@ struct EXT2INode
 {
     uint16_t mode;        // for now just files and directories
     uint32_t size_low;    // lower 32 bit for filesize, for now only use lower bit (size maximum 2^32-1 aka 4GB), org ukuran disk-nya aja cuma 4MB aowkaowkawo
-    uint32_t atime;       // access time, not used
+    uint32_t atime;       // access time
     uint32_t ctime;       // created time
     uint32_t mtime;       // modified time
     uint32_t dtime;       // deleted time

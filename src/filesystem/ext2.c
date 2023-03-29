@@ -2,6 +2,7 @@
 #include "../lib-header/stdmem.h"
 #include "../lib-header/math.h"
 #include "../lib-header/string.h"
+#include "../lib-header/cmos.h"
 
 const uint8_t fs_signature[BLOCK_SIZE] = {
     'C',
@@ -134,7 +135,9 @@ void init_directory_table(struct EXT2INode *node, uint32_t inode, uint32_t paren
   node->size_low = 0;
   node->size_high = 0;
 
-  // TODO: time
+  // CMOS
+  node->mtime = node->ctime = node->atime = get_timestamp();
+  node->dtime = 0;
 
   node->blocks = 1;
   allocate_node_blocks(&block, node, inode_to_bgd(inode));
@@ -429,6 +432,10 @@ void deallocate_node(uint32_t inode)
   }
   // sync bgd table
   write_blocks(&bgd_table, 2, 1);
+
+  // CMOS
+  node->dtime = get_timestamp();
+  sync_node(node, inode);
 }
 
 void deallocate_blocks(void *_locations, uint32_t blocks)
@@ -670,6 +677,10 @@ int8_t read_directory(struct EXT2DriverRequest request)
       read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
       node = &inode_table_buf.table[local_idx];
       read_blocks(request.buf, node->block[0], 1);
+
+      // CMOS
+      node->atime = get_timestamp();
+      sync_node(node, entry->inode);
       return 0;
     }
 
@@ -731,6 +742,10 @@ int8_t read(struct EXT2DriverRequest request)
       }
 
       load_inode_blocks(request.buf, node->block, node->size_low);
+
+      // CMOS
+      node->atime = get_timestamp();
+      sync_node(node, entry->inode);
       return 0;
     }
 
@@ -862,7 +877,9 @@ int8_t write(struct EXT2DriverRequest request)
     new_node.size_low = request.buffer_size;
     new_node.size_high = 0;
 
-    // TODO: time
+    // CMOS
+    new_node.mtime = new_node.ctime = new_node.atime = get_timestamp();
+    new_node.dtime = 0;
 
     new_node.blocks = divceil(request.buffer_size, BLOCK_SIZE);
 
