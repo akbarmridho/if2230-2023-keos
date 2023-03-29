@@ -355,12 +355,10 @@ void sync_node(struct EXT2INode *node, uint32_t inode)
   read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
   inode_table_buf.table[local_idx] = *node;
 
-  // just write one block that changes
-  // floor local_idx to corresponding offset
-  uint32_t offset = (local_idx - (local_idx % INODES_PER_TABLE));
-  write_blocks(inode_table_buf.table + offset, bgd_table.table[bgd].inode_table, 1);
+  write_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
 }
 
+// assume node always available
 uint32_t allocate_node(void)
 {
   uint32_t bgd = -1;
@@ -372,8 +370,6 @@ uint32_t allocate_node(void)
       break;
     }
   }
-
-  // TODO: handle if no node available
 
   // search free node
   read_blocks(&block_buffer, bgd_table.table[bgd].inode_bitmap, 1);
@@ -474,6 +470,7 @@ void deallocate_blocks(void *_locations, uint32_t blocks)
   write_blocks(&bgd_table, 2, 1);
 }
 
+// assume blocks always available
 void search_blocks(uint32_t preferred_bgd, uint32_t *locations, uint32_t blocks, uint32_t *found_count)
 {
 
@@ -642,9 +639,8 @@ int8_t read_directory(struct EXT2DriverRequest request)
 
   if (node->mode != EXT2_S_IFDIR)
   {
-    // parent folder invalid
-    // TODO: different error code
-    return 2;
+    // parent folder invalid: code 3
+    return 3;
   }
 
   // read the directory entry
@@ -698,9 +694,8 @@ int8_t read(struct EXT2DriverRequest request)
 
   if (node->mode != EXT2_S_IFDIR)
   {
-    // parent folder invalid
-    // TODO: different error code
-    return 3;
+    // parent folder invalid: code 4
+    return 4;
   }
 
   // read the directory entry
@@ -744,7 +739,8 @@ int8_t read(struct EXT2DriverRequest request)
     entry = get_directory_entry(&block, offset);
   }
 
-  return 2;
+  // not found
+  return 3;
 }
 
 int8_t write(struct EXT2DriverRequest request)
@@ -892,9 +888,8 @@ int8_t delete(struct EXT2DriverRequest request)
 
   if (node->mode != EXT2_S_IFDIR)
   {
-    // parent folder invalid
-    // TODO: make new error code
-    return -1;
+    // parent folder invalid: code 3
+    return 3;
   }
 
   uint32_t block_num = node->block[0];

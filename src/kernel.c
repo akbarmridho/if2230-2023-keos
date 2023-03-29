@@ -41,25 +41,31 @@ void kernel_setup(void)
 
     char ikanaide[9] = "ikanaide";
 
-    write(request); // Create folder "ikanaide"
+    // ignore error, just for debugging
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    int8_t response;
+#pragma GCC diagnostic pop
+
+    response = write(request); // Create folder "ikanaide"
     memcpy(request.name, "kano1\0\0\0", 8);
     request.name_len = 6;
-    write(request); // Create folder "kano1"
+    response = write(request); // Create folder "kano1"
     memcpy(request.name, ikanaide, 9);
     request.name_len = 9;
     request.is_dir = TRUE;
-    delete (request); // Delete first folder, thus creating hole in FS
+    response = delete (request); // Delete first folder, thus creating hole in FS
 
     memcpy(request.name, "daijoubu", 9);
     request.name_len = 9;
     char to_write[] = "wangy wangy oessssss";
     request.buf = (void *)to_write;
     request.buffer_size = 21;
-    write(request); // Create fragmented file "daijoubu"
+    response = write(request); // Create fragmented file "daijoubu"
 
     struct BlockBuffer readbbuf[20];
     request.buf = readbbuf;
-    read(request);
+    response = read(request);
     read_blocks(&readbbuf, 9, 1);
     // If read properly, readbbuf should starts with 'wangy wangy oessssss'
     for (int i = 0; i < 20; i++)
@@ -69,13 +75,13 @@ void kernel_setup(void)
     request.name = "testbigfile";
     request.name_len = 13;
     request.buffer_size = BLOCK_SIZE * 20;
-    write(request);
+    response = write(request);
 
     request.buf = bbuf;
     request.buffer_size = 5;
 
     read(request); // Failed read due not enough buffer size
-    request.buffer_size = 21;
+    request.buffer_size = BLOCK_SIZE * 20;
     read(request); // Success read on file "daijoubu"
 
     uint16_t year;
