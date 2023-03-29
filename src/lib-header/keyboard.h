@@ -39,6 +39,8 @@ struct KeyboardDriverState
     bool shift_right;
     uint8_t buffer_index;
     char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+    int row;
+    int col;
 } __attribute((packed));
 
 /* -- Driver Interfaces -- */

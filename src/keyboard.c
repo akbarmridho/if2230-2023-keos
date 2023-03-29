@@ -284,13 +284,13 @@ static struct KeyboardDriverState keyboard_state;
 // Activate keyboard ISR / start listen keyboard & save to buffer
 void keyboard_state_activate(void)
 {
-    keyboard_state.keyboard_input_on = 1;
+    keyboard_state.keyboard_input_on = TRUE;
 }
 
 // Deactivate keyboard ISR / stop listening keyboard interrupt
 void keyboard_state_deactivate(void)
 {
-    keyboard_state.keyboard_input_on = 0;
+    keyboard_state.keyboard_input_on = FALSE;
 }
 
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
@@ -319,9 +319,6 @@ bool is_keyboard_blocking(void)
  * after calling `keyboard_state_activate();`
  */
 
-int row = 0;
-int col = 0;
-
 bool is_shift()
 {
     return keyboard_state.shift_left || keyboard_state.shift_right;
@@ -330,9 +327,10 @@ bool is_shift()
 void clear_screen()
 {
     framebuffer_clear();
-    row = 0;
-    col = 0;
+    keyboard_state.row = 0;
+    keyboard_state.col = 0;
 }
+
 void keyboard_isr(void)
 {
     if (!keyboard_state.keyboard_input_on)
@@ -345,19 +343,19 @@ void keyboard_isr(void)
         switch (scancode)
         {
         case 0x3a:
-            keyboard_state.capslock ^= 1;
+            keyboard_state.capslock ^= TRUE;
             break;
         case 0x2a:
-            keyboard_state.shift_left = 1;
+            keyboard_state.shift_left = TRUE;
             break;
         case 0xaa:
-            keyboard_state.shift_left = 0;
+            keyboard_state.shift_left = FALSE;
             break;
         case 0x36:
-            keyboard_state.shift_right = 1;
+            keyboard_state.shift_right = TRUE;
             break;
         case 0xb6:
-            keyboard_state.shift_right = 0;
+            keyboard_state.shift_right = FALSE;
             break;
         default:
             break;
@@ -377,22 +375,22 @@ void keyboard_isr(void)
             {
                 keyboard_state.buffer_index--;
                 keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
-                if (col == 0)
+                if (keyboard_state.col == 0)
                 {
-                    row--;
-                    col = COLUMN - 1;
-                    if (row < 0)
+                    keyboard_state.row--;
+                    keyboard_state.col = COLUMN - 1;
+                    if (keyboard_state.row < 0)
                     {
-                        row = 0;
-                        col = 0;
+                        keyboard_state.row = 0;
+                        keyboard_state.col = 0;
                     }
                 }
                 else
                 {
-                    col--;
+                    keyboard_state.col--;
                 }
 
-                framebuffer_write(row, col, ' ', 0xFF, 0);
+                framebuffer_write(keyboard_state.row, keyboard_state.col, ' ', 0xFF, 0);
             }
         }
         else if (mapped_char == '\n')
@@ -400,8 +398,8 @@ void keyboard_isr(void)
             memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
             keyboard_state.buffer_index = 0;
             keyboard_state.keyboard_input_on = 0;
-            row++;
-            col = 0;
+            keyboard_state.row++;
+            keyboard_state.col = 0;
         }
         else
         {
@@ -420,15 +418,15 @@ void keyboard_isr(void)
             keyboard_state.buffer_index++;
 
             // write the last character to the screen
-            if (col >= COLUMN)
+            if (keyboard_state.col >= COLUMN)
             {
-                row++;
-                col = 0;
+                keyboard_state.row++;
+                keyboard_state.col = 0;
             }
-            framebuffer_write(row, col, mapped_char, 0xFF, 0);
-            col++;
+            framebuffer_write(keyboard_state.row, keyboard_state.col, mapped_char, 0xFF, 0);
+            keyboard_state.col++;
         }
-        framebuffer_set_cursor(row, col);
+        framebuffer_set_cursor(keyboard_state.row, keyboard_state.col);
     }
     pic_ack(IRQ_KEYBOARD);
 }
