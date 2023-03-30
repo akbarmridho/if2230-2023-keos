@@ -309,12 +309,40 @@ uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint32_
  */
 bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2DriverRequest request, bool is_file);
 
+/* -- CRUS Operation -- */
+
+/**
+ * @brief EXT2 Folder / Directory read
+ * @param request buf point to struct EXT2 Directory
+ *          name is directory name
+ *          name_len is directory name length (includes null terminator)
+ *          ext is unused
+ *          inode is parent directory inode to read
+ *          buffer_size must be exactly BLOCK_SIZE
+ * @return Error code: 0 success - 1 not a folder - 2 not found - 3 parent folder invalid - -1 unknown
+ */
 int8_t read_directory(struct EXT2DriverRequest request);
 
+/**
+ * @brief EXT2 read, read a file from file system
+ * @param request All attribute will be used except is_dir for read, buffer_size will limit reading count
+ * @return Error code: 0 success - 1 not a file - 2 not enough buffer - 3 not found - 4 parent folder invalid - -1 unknown
+ */
 int8_t read(struct EXT2DriverRequest request);
 
+/**
+ * @brief EXT2 write, write a file or a folder to file system
+ *
+ * @param All attribute will be used for write except is_dir, buffer_size == 0 then create a folder / directory. It is possible that exist file with name same as a folder
+ * @return Error code: 0 success - 1 file/folder already exist - 2 invalid parent folder - -1 unknown
+ */
 int8_t write(struct EXT2DriverRequest request);
 
+/**
+ * @brief EXT2 delete, delete a file or empty directory in file system
+ *  @param request buf and buffer_size is unused, is_dir == true means delete folder (possible file with name same as folder)
+ * @return Error code: 0 success - 1 not found - 2 folder is not empty - -1 unknown
+ */
 int8_t delete(struct EXT2DriverRequest request);
 
 #endif
