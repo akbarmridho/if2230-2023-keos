@@ -62,3 +62,12 @@ for creating a disk image, use `make disk` command, this will create a new disk 
 
 ```
 
+## EXT2 Filesystem
+This project implements EXT2 as Operating System Filesystem. We design the C header structure by ourself. The source of our EXT2 filesystem can be accessed [here](https://www.nongnu.org/ext2-doc/ext2.html).
+
+### Directory Entry
+We use linked list directory table that contains directory entry. The directory table is also a linked list so that if the entry is already full in a block, another block will be allocated (infinite directory).
+
+Each directory entry has dynamic length of name. The implementation is almost like this.
+
+<img src="./img/directory-entry.png" />
