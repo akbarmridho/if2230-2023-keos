@@ -9,6 +9,8 @@
 // Operating system page directory, using page size PAGE_FRAME_SIZE (4 MiB)
 extern struct PageDirectory _paging_kernel_page_directory;
 
+extern struct PhysicalPageDirectory _paging_physical_page_directory;
+
 /**
  * Page Directory Entry Flag, only first 8 bit
  *
@@ -74,6 +76,19 @@ struct PageDirectory
 } __attribute__((packed));
 
 /**
+ * Mapping for physical to virtual page index
+ *
+ * index will act as page index since last available physical addr
+ * its value will act as virtual page index it belongs to
+ *
+ * -1 mean unused page
+ */
+struct PhysicalPageDirectory
+{
+  int16_t table[PAGE_ENTRY_COUNT];
+};
+
+/**
  * Containing page driver states
  *
  * @param last_available_physical_addr Pointer to last empty physical addr (multiple of 4 MiB)
@@ -109,5 +124,7 @@ void flush_single_tlb(void *virtual_addr);
  * @return int8_t       0 success, -1 for failed allocation
  */
 int8_t allocate_single_user_page_frame(void *virtual_addr);
+
+uint32_t get_physical_address_page_at(uint32_t idx);
 
 #endif

@@ -9,6 +9,7 @@
 #include "interrupt/idt.h"
 #include "filesystem/ext2.h"
 #include "lib-header/cmos.h"
+#include "lib-header/paging.h"
 
 void kernel_setup(void)
 {
@@ -92,6 +93,9 @@ void kernel_setup(void)
     uint16_t second;
 
     read_rtc(&year, &month, &day, &hour, &minute, &second);
+
+    allocate_single_user_page_frame((void *)0x500000);
+    *((uint8_t *)0x500000) = 1;
 
     while (TRUE)
         keyboard_state_activate();
