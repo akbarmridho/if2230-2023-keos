@@ -45,6 +45,21 @@
             "type": "shell",
             "label": "Exit QEMU",
             "command": "pkill -f qemu || test $? -eq 1"
+        },
+        {
+            "type": "cppbuild",
+            "label": "Build Inserter",
+            "command": "make",
+            "args": [
+                "inserter",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ],
 }

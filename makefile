@@ -9,7 +9,7 @@ OUTPUT_FOLDER = bin
 ISO_NAME      = os2023
 
 # For compiling all c files
-EXCLUDED_FILES = $(SOURCE_FOLDER)/filesystem/fat32.c
+EXCLUDED_FILES = $(SOURCE_FOLDER)/filesystem/fat32.c $(SOURCE_FOLDER)/external-inserter.c
 SRC_FILES = $(filter-out $(EXCLUDED_FILES), $(shell find $(SOURCE_FOLDER) -name '*.c'))
 OBJ_FILES := $(patsubst $(SOURCE_FOLDER)/%.c,$(OUTPUT_FOLDER)/%.o,$(SRC_FILES))
 DIR = $(filter-out src, $(patsubst $(SOURCE_FOLDER)/%, $(OUTPUT_FOLDER)/%, $(shell find $(SOURCE_FOLDER) -type d)))
@@ -70,6 +70,6 @@ iso: dir kernel
 
 inserter:
 	@$(CC) -Wno-builtin-declaration-mismatch -g \
-		$(SOURCE_FOLDER)/stdmem.c $(SOURCE_FOLDER)/fat32.c \
+		$(SOURCE_FOLDER)/stdmem.c $(SOURCE_FOLDER)/ext2.c \
 		$(SOURCE_FOLDER)/external-inserter.c \
 		-o $(OUTPUT_FOLDER)/inserter
