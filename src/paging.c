@@ -4,15 +4,15 @@ __attribute__((aligned(0x1000))) struct PageDirectory _paging_kernel_page_direct
     .table = {
         [0] = {
             .flag.present_bit = 1,
-            .flag.write_bit = 1,
+            .flag.read_write = 1,
             .lower_address = 0,
-            .flag.use_pagesize_4_mb = 1,
+            .flag.page_size = 1,
         },
         [0x300] = {
             .flag.present_bit = 1,
-            .flag.write_bit = 1,
+            .flag.read_write = 1,
             .lower_address = 0,
-            .flag.use_pagesize_4_mb = 1,
+            .flag.page_size = 1,
         },
     }};
 
