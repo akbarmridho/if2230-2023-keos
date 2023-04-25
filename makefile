@@ -85,4 +85,4 @@ user-shell:
 
 insert-shell: inserter user-shell
 	@echo Inserting shell into root directory...
-	@$(OUTPUT_FOLDER)/inserter shell 1 $(OUTPUT_FOLDER)/$(DISK_NAME).bin
+	@cd $(OUTPUT_FOLDER); ./inserter shell 1 $(DISK_NAME).bin

@@ -81,9 +81,10 @@ int main(int argc, char *argv[])
         .buf = file_buffer,
         .ext = "\0\0\0",
         .buffer_size = filesize,
-    };
+        .name_len = 7};
     sscanf(argv[2], "%u", &request.inode);
     sscanf(argv[1], "%8s", request.name);
+
     int retcode = write(request);
     if (retcode == 0)
         puts("Write success");

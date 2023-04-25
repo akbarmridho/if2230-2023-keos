@@ -45,7 +45,7 @@
             "program": "${workspaceFolder}/bin/inserter",
             "args": [
                 "shell",
-                "2",
+                "1",
                 "storage.bin"
             ],
             "stopAtEntry": false,
