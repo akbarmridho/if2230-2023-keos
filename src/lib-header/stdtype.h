@@ -4,7 +4,11 @@
 /**
  * Unsigned integer representing object size
  */
+#ifdef external
+typedef unsigned long int size_t;
+#else
 typedef unsigned int size_t;
+#endif
 
 /**
  * 32-bit unsigned integer

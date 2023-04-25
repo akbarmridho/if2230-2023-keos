@@ -2,7 +2,17 @@
 #include "../lib-header/stdmem.h"
 #include "../lib-header/math.h"
 #include "../lib-header/string.h"
+
+#ifdef external
+#include <time.h>
+
+uint32_t get_timestamp()
+{
+  return (uint32_t)time(NULL);
+}
+#else
 #include "../lib-header/cmos.h"
+#endif
 
 const uint8_t fs_signature[BLOCK_SIZE] = {
     'C',
