@@ -5,6 +5,10 @@
 
 #define GDT_MAX_ENTRY_COUNT 32
 
+#define GDT_USER_CODE_SEGMENT_SELECTOR 0x18
+#define GDT_USER_DATA_SEGMENT_SELECTOR 0x20
+#define GDT_TSS_SELECTOR 0x28
+
 extern struct GDTR _gdt_gdtr;
 
 /**
@@ -24,7 +28,7 @@ struct SegmentDescriptor
     uint16_t segment_low; // Segment limit
     uint16_t base_low;    // base address
 
-    // Next 16-bit (Bit 32 to 47)
+    // Next 32-bit (Bit 32 to 64)
     uint8_t base_mid;               // base mid
     uint8_t type_bit : 4;           // type
     uint8_t non_system : 1;         // s
@@ -60,5 +64,7 @@ struct GDTR
     uint16_t size;
     struct GlobalDescriptorTable *address;
 } __attribute__((packed));
+
+void gdt_install_tss(void);
 
 #endif
