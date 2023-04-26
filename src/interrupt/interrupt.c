@@ -7,7 +7,7 @@
 #include "./idt.h"
 
 struct TSSEntry _interrupt_tss_entry = {
-    .ss0 = GDT_KERNEL_CODE_SEGMENT_SELECTOR};
+    .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR};
 
 void io_wait(void)
 {

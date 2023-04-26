@@ -1,5 +1,5 @@
 #include "lib-header/stdtype.h"
-// #include "filesystem/ext2.h"
+#include "filesystem/ext2.h"
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
 {
@@ -22,26 +22,27 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
 
 int main(void)
 {
-    // struct BlockBuffer buffer[4];
-    // struct EXT2DriverRequest request = {
-    //     .buf = &buffer,
-    //     .name = "ikanaide",
-    //     .ext = "\0\0\0",
-    //     .inode = 1,
-    //     .buffer_size = BLOCK_SIZE * 4,
-    //     .name_len = 9};
-    // int32_t retcode;
-    // syscall(0, (uint32_t)&request, (uint32_t)&retcode, 0);
-    // if (retcode == 0)
-    //     syscall(5, (uint32_t) "owo\n", 4, 0xF);
-    syscall(5, (uint32_t) "owo", 3, 0xF);
+    struct BlockBuffer buffer[4];
+    struct EXT2DriverRequest request = {
+        .buf = &buffer,
+        .name = "ikanaide",
+        .ext = "\0\0\0",
+        .inode = 1,
+        .buffer_size = BLOCK_SIZE * 4,
+        .name_len = 9};
+    int32_t retcode;
+    syscall(0, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode == 0)
+        syscall(5, (uint32_t) "owo\n", 4, 0xF);
 
-    // char buf[16];
-    // while (TRUE)
-    // {
-    //     syscall(4, (uint32_t)buf, 16, 0);
-    //     syscall(5, (uint32_t)buf, 16, 0xF);
-    // }
+    char buf[16];
+    char endl[2] = "\n";
+    while (TRUE)
+    {
+        syscall(4, (uint32_t)buf, 16, 0);
+        syscall(5, (uint32_t)buf, 16, 0xF);
+        syscall(5, (uint32_t)endl, 1, 0xF);
+    }
 
     return 0;
 }
