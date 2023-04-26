@@ -11,6 +11,25 @@
 #include "lib-header/cmos.h"
 #include "lib-header/paging.h"
 
+void _syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
+{
+    __asm__ volatile("mov %0, %%ebx"
+                     : /* <Empty> */
+                     : "r"(ebx));
+    __asm__ volatile("mov %0, %%ecx"
+                     : /* <Empty> */
+                     : "r"(ecx));
+    __asm__ volatile("mov %0, %%edx"
+                     : /* <Empty> */
+                     : "r"(edx));
+    __asm__ volatile("mov %0, %%eax"
+                     : /* <Empty> */
+                     : "r"(eax));
+    // Note : gcc usually use %eax as intermediate register,
+    //        so it need to be the last one to mov
+    __asm__ volatile("int $0x30");
+}
+
 void kernel_setup(void)
 {
     enter_protected_mode(&_gdt_gdtr);
@@ -117,8 +136,6 @@ void kernel_setup(void)
 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t *)0);
-
-    keyboard_state_activate();
 
     while (TRUE)
         ;

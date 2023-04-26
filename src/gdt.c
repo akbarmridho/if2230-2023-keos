@@ -75,7 +75,7 @@ struct GlobalDescriptorTable global_descriptor_table = {
          .granularity = 1,
          .base_high = 0},
         {
-            // .segment_high = (sizeof(struct TSSEntry) & (0xF << 16)) >> 16, dude wtf?
+            .segment_limit = (sizeof(struct TSSEntry) & (0xF << 16)) >> 16,
             .segment_low = sizeof(struct TSSEntry),
             .base_high = 0,
             .base_mid = 0,

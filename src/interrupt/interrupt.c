@@ -57,13 +57,21 @@ void pic_remap(void)
 
 void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptStack info)
 {
-    if (cpu.eax == 0)
+    switch (cpu.eax)
     {
-        struct EXT2DriverRequest request = *(struct EXT2DriverRequest *)cpu.ebx;
-        *((int8_t *)cpu.ecx) = read(request);
-    }
-    else if (cpu.eax == 4)
-    {
+    case 0:
+        *((int8_t *)cpu.ecx) = read(*(struct EXT2DriverRequest *)cpu.ebx);
+        break;
+    case 1:
+        *((int8_t *)cpu.ecx) = read_directory(*(struct EXT2DriverRequest *)cpu.ebx);
+        break;
+    case 2:
+        *((int8_t *)cpu.ecx) = write(*(struct EXT2DriverRequest *)cpu.ebx);
+        break;
+    case 3:
+        *((int8_t *)cpu.ecx) = delete (*(struct EXT2DriverRequest *)cpu.ebx);
+        break;
+    case 4:
         keyboard_state_activate();
         __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
         while (is_keyboard_blocking())
@@ -71,10 +79,12 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         char buf[KEYBOARD_BUFFER_SIZE];
         get_keyboard_buffer(buf);
         memcpy((char *)cpu.ebx, buf, cpu.ecx);
-    }
-    else if (cpu.eax == 5)
-    {
+        break;
+    case 5:
         puts((char *)cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side
+        break;
+    default:
+        break;
     }
 }
 
@@ -89,6 +99,7 @@ void main_interrupt_handler(
         keyboard_isr();
         break;
     case 0x30:
+        puts("called", 7, 0xF);
         syscall(cpu, info);
         break;
     }

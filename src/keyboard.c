@@ -284,6 +284,8 @@ static struct KeyboardDriverState keyboard_state;
 // Activate keyboard ISR / start listen keyboard & save to buffer
 void keyboard_state_activate(void)
 {
+    memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
+    keyboard_state.buffer_index = 0;
     keyboard_state.keyboard_input_on = TRUE;
 }
 
@@ -388,9 +390,7 @@ void keyboard_isr(void)
         }
         else if (mapped_char == '\n')
         {
-            memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
-            keyboard_state.buffer_index = 0;
-            keyboard_state.keyboard_input_on = 0;
+            keyboard_state_deactivate();
             framebuffer_state.row++;
             framebuffer_state.col = 0;
         }

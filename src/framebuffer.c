@@ -63,7 +63,8 @@ void clear_screen(void)
 
 void put_char(char c, uint32_t color)
 {
-    framebuffer_write(framebuffer_state.row, framebuffer_state.col, c, color, 0);
+    if (c != '\n')
+        framebuffer_write(framebuffer_state.row, framebuffer_state.col, c, color, 0);
     if (framebuffer_state.col == COLUMN - 1 || c == '\n')
     {
         framebuffer_state.row++;
@@ -82,4 +83,5 @@ void puts(const char *str, uint32_t count, uint32_t color)
         put_char(str[i], color);
     }
     put_char('\n', color);
+    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }
