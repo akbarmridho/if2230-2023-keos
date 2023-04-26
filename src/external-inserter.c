@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     else if (retcode == 1)
         puts("Error: File/folder name already exist");
     else if (retcode == 2)
-        puts("Error: Invalid parent cluster");
+        puts("Error: Invalid parent node index");
     else
         puts("Error: Unknown error");
 
