@@ -32,6 +32,10 @@
                     "description": "Get kernel symbols"
                 },
                 {
+                    "text": "add-symbol-file shell_elf",
+                    "description": "Get shell symbols"
+                },
+                {
                     "text": "set output-radix 16",
                     "description": "Use hexadecimal output"
                 }
