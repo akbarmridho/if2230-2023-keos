@@ -46,10 +46,10 @@ void kernel_setup(void)
     // char ikanaide[9] = "ikanaide";
 
     // ignore error, just for debugging
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-    int8_t response;
-#pragma GCC diagnostic pop
+    // #pragma GCC diagnostic push
+    // #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    //     int8_t response;
+    // #pragma GCC diagnostic pop
 
     // response = write(request); // Create folder "ikanaide"
     // memcpy(request.name, "kano1\0\0\0", 8);
@@ -109,10 +109,11 @@ void kernel_setup(void)
             .ext = "\0\0\0",
             .inode = 1,
             .buffer_size = 0x100000,
-            .name_len = 7,
+            .name_len = 5,
         };
 
     int retcode = read(req);
+    (void)retcode;
 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t *)0);
