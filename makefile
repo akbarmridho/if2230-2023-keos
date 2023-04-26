@@ -71,7 +71,7 @@ iso: dir kernel
 inserter:
 	@$(CC) -D external -Wno-builtin-declaration-mismatch -g \
 		$(SOURCE_FOLDER)/stdmem.c $(SOURCE_FOLDER)/filesystem/ext2.c $(SOURCE_FOLDER)/math.c \
-		$(SOURCE_FOLDER)/external-inserter.c \
+		$(SOURCE_FOLDER)/string.c $(SOURCE_FOLDER)/external-inserter.c \
 		-o $(OUTPUT_FOLDER)/inserter
 
 user-shell:

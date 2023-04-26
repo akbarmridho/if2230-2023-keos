@@ -32,3 +32,13 @@ char *strcpy(const char *src, char *dest)
 
   return original_dest;
 }
+
+int strlen(const char *str)
+{
+  int res = 0;
+  while (str[res] != '\0')
+  {
+    res++;
+  }
+  return res;
+}

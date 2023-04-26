@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "./lib-header/string.h"
 
 typedef uint8_t bool;
 
@@ -74,14 +75,16 @@ int main(int argc, char *argv[])
 
     printf("Filename : %s\n", argv[1]);
     printf("Filesize : %ld bytes\n", filesize);
+    int filename_length = strlen(argv[1]);
 
-    // FAT32 operations
+    // EXT2 operations
     initialize_filesystem_ext2();
     struct EXT2DriverRequest request = {
         .buf = file_buffer,
         .ext = "\0\0\0",
         .buffer_size = filesize,
-        .name_len = 7};
+        .name = argv[1],
+        .name_len = filename_length};
     sscanf(argv[2], "%u", &request.inode);
     sscanf(argv[1], "%8s", request.name);
 
