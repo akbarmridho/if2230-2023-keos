@@ -61,6 +61,16 @@ void clear_screen(void)
     framebuffer_state.col = 0;
 }
 
+void scroll_up()
+{
+    memcpy(MEMORY_FRAMEBUFFER, MEMORY_FRAMEBUFFER + COLUMN * 2, COLUMN * 2 * ROW - COLUMN * 2);
+    framebuffer_state.row--;
+    for (int i = 0; i < COLUMN; i++)
+    {
+        framebuffer_write(framebuffer_state.row, i, ' ', 0xF, 0);
+    }
+}
+
 void put_char(char c, uint32_t color)
 {
     if (c != '\n')
@@ -69,6 +79,8 @@ void put_char(char c, uint32_t color)
     {
         framebuffer_state.row++;
         framebuffer_state.col = 0;
+        if (framebuffer_state.row == ROW)
+            scroll_up();
     }
     else
     {
@@ -80,8 +92,9 @@ void puts(const char *str, uint32_t count, uint32_t color)
 {
     for (uint32_t i = 0; i < count; i++)
     {
+        if (str[i] == '\0')
+            break;
         put_char(str[i], color);
     }
-    put_char('\n', color);
     framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }

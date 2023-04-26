@@ -99,7 +99,6 @@ void main_interrupt_handler(
         keyboard_isr();
         break;
     case 0x30:
-        puts("called", 7, 0xF);
         syscall(cpu, info);
         break;
     }

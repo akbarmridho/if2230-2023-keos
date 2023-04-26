@@ -386,13 +386,13 @@ void keyboard_isr(void)
                 }
 
                 framebuffer_write(framebuffer_state.row, framebuffer_state.col, ' ', 0xFF, 0);
+                framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
             }
         }
         else if (mapped_char == '\n')
         {
+            puts(&mapped_char, 1, 0xF);
             keyboard_state_deactivate();
-            framebuffer_state.row++;
-            framebuffer_state.col = 0;
         }
         else
         {
@@ -410,16 +410,8 @@ void keyboard_isr(void)
             keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
             keyboard_state.buffer_index++;
 
-            // write the last character to the screen
-            if (framebuffer_state.col >= COLUMN)
-            {
-                framebuffer_state.row++;
-                framebuffer_state.col = 0;
-            }
-            framebuffer_write(framebuffer_state.row, framebuffer_state.col, mapped_char, 0xFF, 0);
-            framebuffer_state.col++;
+            puts(&mapped_char, 1, 0xF);
         }
-        framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
     }
     pic_ack(IRQ_KEYBOARD);
 }
