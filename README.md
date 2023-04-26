@@ -7,10 +7,12 @@
   - [Team Member](#team-member)
   - [Running The Program](#running-the-program)
   - [Program Structure](#program-structure)
+  - [EXT2 Filesystem](#ext2-filesystem)
+    - [Directory Entry](#directory-entry)
 
 ## Project Description
 
-This Repository is meant for the Operating System Course on making a Operating System, specifically, a 32-bit Operating System. 
+This Repository is meant for the Operating System Course on making a Operating System, specifically, a 32-bit Operating System.
 
 Milestone 1 focuses on the GDT, Writing text to a framebuffer and booting sequence
 
@@ -30,20 +32,25 @@ Run the makefile using `make` command, all of the dependencies will automaticall
 
 for creating a disk image, use `make disk` command, this will create a new disk image and delete the last one.
 
+for inserting the shell, use `make insert-shell` command, this will insert a shell into the user space
+
 ## Program Structure
 
 ```
-│  
+│
 │   README
 │   makefile
 │   .gitignore
 │
 ├─── bin
-│        
+│
+├─── img
+│
 ├─── other
-│        
+│
 └─── src
       │    cmos.c
+      │    external-inserter.c
       │    framebuffer.c
       │    gdt.c
       │    kernel_loader.s
@@ -52,13 +59,15 @@ for creating a disk image, use `make disk` command, this will create a new disk 
       │    linker.ld
       │    math.c
       │    menu.lst
+      │    paging.c
       │    portio.c
       │    stdmem.c
       │    string.c
-      │    
+      │
       ├─── Filesystem
       ├─── Interrupt
-      └─── lib-header
+      ├─── lib-header
+      └─── user
 
 ```
 
