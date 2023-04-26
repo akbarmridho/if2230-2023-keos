@@ -9,6 +9,14 @@
 #define COLUMN 80
 #define ROW 25
 
+struct FramebufferState
+{
+  int row;
+  int col;
+} __attribute((packed));
+
+extern struct FramebufferState framebuffer_state;
+
 /**
  * Terminal framebuffer
  * Resolution: 80x25
@@ -43,5 +51,9 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c);
  *
  */
 void framebuffer_clear(void);
+
+void clear_screen(void);
+
+void puts(const char *str, uint32_t count, uint32_t color);
 
 #endif

@@ -1,10 +1,13 @@
 #include "interrupt.h"
 #include "../lib-header/portio.h"
 #include "../lib-header/keyboard.h"
+#include "../lib-header/framebuffer.h"
+#include "../filesystem/ext2.h"
+#include "../lib-header/stdmem.h"
+#include "./idt.h"
 
 struct TSSEntry _interrupt_tss_entry = {
-
-};
+    .ss0 = GDT_KERNEL_CODE_SEGMENT_SELECTOR};
 
 void io_wait(void)
 {
@@ -52,7 +55,28 @@ void pic_remap(void)
     out(PIC2_DATA, a2);
 }
 
-int count = 0;
+void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptStack info)
+{
+    if (cpu.eax == 0)
+    {
+        struct EXT2DriverRequest request = *(struct EXT2DriverRequest *)cpu.ebx;
+        *((int8_t *)cpu.ecx) = read(request);
+    }
+    else if (cpu.eax == 4)
+    {
+        keyboard_state_activate();
+        __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
+        while (is_keyboard_blocking())
+            ;
+        char buf[KEYBOARD_BUFFER_SIZE];
+        get_keyboard_buffer(buf);
+        memcpy((char *)cpu.ebx, buf, cpu.ecx);
+    }
+    else if (cpu.eax == 5)
+    {
+        puts((char *)cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side
+    }
+}
 
 void main_interrupt_handler(
     __attribute__((unused)) struct CPURegister cpu,
@@ -62,8 +86,10 @@ void main_interrupt_handler(
     switch (int_number)
     {
     case 0x21:
-        count++;
         keyboard_isr();
+        break;
+    case 0x30:
+        syscall(cpu, info);
         break;
     }
 }

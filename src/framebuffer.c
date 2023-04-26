@@ -3,6 +3,10 @@
 #include "lib-header/stdmem.h"
 #include "lib-header/portio.h"
 
+struct FramebufferState framebuffer_state = {
+    .col = 0,
+    .row = 0};
+
 void enable_cursor(uint8_t start, uint8_t end)
 {
     out(0x3D4, 0x0A);
@@ -48,4 +52,34 @@ void framebuffer_clear(void)
             framebuffer_write(i, j, ' ', 0xFF, 0);
         }
     }
+}
+
+void clear_screen(void)
+{
+    framebuffer_clear();
+    framebuffer_state.row = 0;
+    framebuffer_state.col = 0;
+}
+
+void put_char(char c, uint32_t color)
+{
+    framebuffer_write(framebuffer_state.row, framebuffer_state.col, c, color, 0);
+    if (framebuffer_state.col == COLUMN - 1 || c == '\n')
+    {
+        framebuffer_state.row++;
+        framebuffer_state.col = 0;
+    }
+    else
+    {
+        framebuffer_state.col++;
+    }
+}
+
+void puts(const char *str, uint32_t count, uint32_t color)
+{
+    for (uint32_t i = 0; i < count; i++)
+    {
+        put_char(str[i], color);
+    }
+    put_char('\n', color);
 }
