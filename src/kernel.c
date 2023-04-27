@@ -43,6 +43,7 @@ void kernel_setup(void)
 
     gdt_install_tss();
     set_tss_register();
+    int8_t retval;
 
     // struct BlockBuffer bbuf[10];
     // for (uint32_t i = 0; i < 10; i++)
@@ -56,10 +57,10 @@ void kernel_setup(void)
     // struct EXT2DriverRequest request = {
     //     .buf = bbuf,
     //     .name = "ikanaide",
-    //     .ext = "uwu",
+    //     .ext = "\0\0\0",
     //     .inode = 1,
-    //     .buffer_size = 0,
-    //     .name_len = 9,
+    //     .buffer_size = 5,
+    //     .name_len = 8,
     // };
 
     // char ikanaide[9] = "ikanaide";
@@ -70,7 +71,7 @@ void kernel_setup(void)
     //     int8_t response;
     // #pragma GCC diagnostic pop
 
-    // response = write(request); // Create folder "ikanaide"
+    // retval = write(request); // Create file "ikanaide"
     // memcpy(request.name, "kano1\0\0\0", 8);
     // request.name_len = 6;
     // response = write(request); // Create folder "kano1"
@@ -119,7 +120,10 @@ void kernel_setup(void)
     // allocate_single_user_page_frame((void *)0x500000);
     // *((uint8_t *)0x500000) = 1;
 
-    allocate_single_user_page_frame((uint8_t *)0);
+    // allocate_single_user_page_frame((uint8_t *)0);
+    // struct BlockBuffer buffer[4];
+    // request.buf = buffer;
+    // retval = read(request);
 
     struct EXT2DriverRequest req =
         {
@@ -131,8 +135,8 @@ void kernel_setup(void)
             .name_len = 5,
         };
 
-    int retcode = read(req);
-    (void)retcode;
+    retval = read(req);
+    (void)retval;
 
     set_tss_kernel_current_stack();
     kernel_execute_user_program((uint8_t *)0);

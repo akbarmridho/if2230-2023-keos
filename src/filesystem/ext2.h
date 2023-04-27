@@ -37,6 +37,9 @@ struct EXT2DriverRequest
 
     // for delete
     bool is_dir;
+
+    // inode_only means just get the directory inode without loading the buffers
+    bool inode_only;
 } __attribute__((packed));
 
 struct EXT2Superblock
@@ -321,7 +324,7 @@ bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2Driver
  *          buffer_size must be exactly BLOCK_SIZE
  * @return Error code: 0 success - 1 not a folder - 2 not found - 3 parent folder invalid - -1 unknown
  */
-int8_t read_directory(struct EXT2DriverRequest request);
+int8_t read_directory(struct EXT2DriverRequest *prequest);
 
 /**
  * @brief EXT2 read, read a file from file system
@@ -344,5 +347,7 @@ int8_t write(struct EXT2DriverRequest request);
  * @return Error code: 0 success - 1 not found - 2 folder is not empty - -1 unknown
  */
 int8_t delete(struct EXT2DriverRequest request);
+
+int8_t resolve_path(struct EXT2DriverRequest *request);
 
 #endif

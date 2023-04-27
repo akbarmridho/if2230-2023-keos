@@ -63,7 +63,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         *((int8_t *)cpu.ecx) = read(*(struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 1:
-        *((int8_t *)cpu.ecx) = read_directory(*(struct EXT2DriverRequest *)cpu.ebx);
+        *((int8_t *)cpu.ecx) = read_directory((struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 2:
         *((int8_t *)cpu.ecx) = write(*(struct EXT2DriverRequest *)cpu.ebx);

@@ -33,6 +33,13 @@ SECTIONS {
         string.o(.data)
         string.o(.rodata*)
     }
+
+    .command ALIGN(4):
+    {
+        command.o(.text)
+        command.o(.data)
+        command.o(.rodata*)
+    }
     _linker_user_program_end = .;
     ASSERT ((_linker_user_program_end <= 1 * 1024 * 1024), "Error: User program linking result is more than 1 MiB")
 }

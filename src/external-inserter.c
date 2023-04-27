@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
     printf("Filename : %s\n", argv[1]);
     printf("Filesize : %ld bytes\n", filesize);
     int filename_length = strlen(argv[1]);
+    printf("File length: %d\n", filename_length);
 
     // EXT2 operations
     initialize_filesystem_ext2();

@@ -127,14 +127,14 @@ void init_directory_table(struct EXT2INode *node, uint32_t inode, uint32_t paren
   struct EXT2DirectoryEntry *table = get_directory_entry(&block, 0);
   table->inode = inode;
   table->file_type = EXT2_FT_DIR;
-  table->name_len = 2;
+  table->name_len = 1;
   memcpy(get_entry_name(table), ".", 2);
   table->rec_len = get_directory_record_length(table->name_len);
 
   struct EXT2DirectoryEntry *parent_table = get_next_directory_entry(table);
   parent_table->inode = parent_inode;
   parent_table->file_type = EXT2_FT_DIR;
-  parent_table->name_len = 3;
+  parent_table->name_len = 2;
   memcpy(get_entry_name(parent_table), "..", 3);
   parent_table->rec_len = get_directory_record_length(parent_table->name_len);
 
@@ -293,8 +293,8 @@ bool is_directory_empty(uint32_t inode)
 
 uint16_t get_directory_record_length(uint8_t name_len)
 {
-  // directory entry record length is based by name length
-  uint16_t len = 4 + 2 + 1 + 1 + 4 + name_len;
+  // directory entry record length is based by name length (+1 to also store null terminator)
+  uint16_t len = 4 + 2 + 1 + 1 + 4 + name_len + 1;
   return divceil(len, 4) * 4;
 }
 
@@ -644,8 +644,12 @@ bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2Driver
   return !strcmp(request.ext, entry->ext, 4);
 }
 
-int8_t read_directory(struct EXT2DriverRequest request)
+int8_t read_directory(struct EXT2DriverRequest *prequest)
 {
+  struct EXT2DriverRequest request = *prequest;
+  int8_t retval = resolve_path(&request);
+  if (retval != 0)
+    return 3;
   uint32_t bgd = inode_to_bgd(request.inode);
   uint32_t local_idx = inode_to_local(request.inode);
 
@@ -664,8 +668,8 @@ int8_t read_directory(struct EXT2DriverRequest request)
   struct BlockBuffer block;
   read_blocks(&block, node->block[0], 1);
 
-  // get the first children entry
-  uint32_t offset = get_directory_first_child_offset(&block);
+  // read from . to .. to child entries
+  uint32_t offset = 0;
   struct EXT2DirectoryEntry *entry = get_directory_entry(&block, offset);
 
   while (offset < BLOCK_SIZE && entry->inode != 0)
@@ -682,11 +686,21 @@ int8_t read_directory(struct EXT2DriverRequest request)
     if (is_directory_entry_same(entry, request, FALSE))
     {
       // found
-      bgd = inode_to_bgd(entry->inode);
-      local_idx = inode_to_local(entry->inode);
-      read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
-      node = &inode_table_buf.table[local_idx];
-      read_blocks(request.buf, node->block[0], 1);
+      if (offset != 0)
+      {
+        // if offset = 0, current block will be used
+        bgd = inode_to_bgd(entry->inode);
+        local_idx = inode_to_local(entry->inode);
+        read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
+        node = &inode_table_buf.table[local_idx];
+        if (!request.inode_only)
+          read_blocks(request.buf, node->block[0], 1);
+      }
+      else if (!request.inode_only)
+      {
+        memcpy(request.buf, block.buf, BLOCK_SIZE);
+      }
+      prequest->inode = entry->inode;
 
       // CMOS
       node->atime = get_timestamp();
@@ -705,6 +719,9 @@ int8_t read_directory(struct EXT2DriverRequest request)
 
 int8_t read(struct EXT2DriverRequest request)
 {
+  int8_t retval = resolve_path(&request);
+  if (retval != 0)
+    return 4;
   uint32_t bgd = inode_to_bgd(request.inode);
   uint32_t local_idx = inode_to_local(request.inode);
 
@@ -770,6 +787,10 @@ int8_t read(struct EXT2DriverRequest request)
 
 int8_t write(struct EXT2DriverRequest request)
 {
+  int8_t retval = resolve_path(&request);
+  if (retval != 0)
+    // invalid parent folder
+    return 2;
   uint32_t bgd = inode_to_bgd(request.inode);
   uint32_t local_idx = inode_to_local(request.inode);
 
@@ -866,7 +887,8 @@ int8_t write(struct EXT2DriverRequest request)
   struct EXT2INode new_node;
   uint32_t new_inode = allocate_node();
   entry->inode = new_inode;
-  memcpy(get_entry_name(entry), request.name, request.name_len);
+  // + 1 to also store null terminator if exist
+  memcpy(get_entry_name(entry), request.name, request.name_len + 1);
   entry->name_len = request.name_len;
   entry->rec_len = get_directory_record_length(entry->name_len);
 
@@ -905,6 +927,9 @@ int8_t write(struct EXT2DriverRequest request)
 
 int8_t delete(struct EXT2DriverRequest request)
 {
+  int8_t retval = resolve_path(&request);
+  if (retval != 0)
+    return 1;
   uint32_t bgd = inode_to_bgd(request.inode);
   uint32_t local_idx = inode_to_local(request.inode);
 
@@ -991,4 +1016,41 @@ int8_t delete(struct EXT2DriverRequest request)
   }
 
   return 0;
+}
+
+int8_t resolve_path(struct EXT2DriverRequest *request)
+{
+  if (request->name_len == 0)
+    return 1;
+  if (request->name[0] == '/')
+  {
+    // absolute path
+    request->inode = sblock.first_ino;
+    request->name++;
+    request->name_len--;
+    return resolve_path(request);
+  }
+  uint32_t len = 0;
+  while (len < request->name_len && request->name[len] != '/')
+  {
+    len++;
+  }
+  if (len == request->name_len)
+  {
+    // got the basic path already
+    return 0;
+  }
+  // read directory
+  uint8_t prev_name_len = request->name_len;
+  bool prev_inode_only = request->inode_only;
+  request->name_len = len;
+  request->inode_only = TRUE;
+  int8_t retval = read_directory(request);
+  if (retval != 0)
+    return retval;
+  // if abc/de, from name length 6 to 6 - 3 - 1 = 2 (de)
+  request->name_len = prev_name_len - len - 1;
+  request->name += len + 1;
+  request->inode_only = prev_inode_only;
+  return resolve_path(request);
 }

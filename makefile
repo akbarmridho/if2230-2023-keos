@@ -78,9 +78,10 @@ user-shell:
 	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/user/user-entry.s -o user-entry.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/user-shell.c -o user-shell.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/sys/sys.c -o sys.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/command.c -o command.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/string.c -o string.o
 	@$(LIN) -T $(SOURCE_FOLDER)/user/user-linker.ld -melf_i386 \
-		user-entry.o sys.o string.o user-shell.o -o $(OUTPUT_FOLDER)/shell
+		user-entry.o sys.o string.o command.o user-shell.o -o $(OUTPUT_FOLDER)/shell
 	@echo Linking object shell object files and generate flat binary...
 	@$(LIN) -T $(SOURCE_FOLDER)/user/user-linker.ld -melf_i386 --oformat=elf32-i386\
 		user-entry.o user-shell.o -o $(OUTPUT_FOLDER)/shell_elf
