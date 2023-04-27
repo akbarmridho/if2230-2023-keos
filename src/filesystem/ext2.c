@@ -766,7 +766,7 @@ int8_t read_next_directory_table(struct EXT2DriverRequest request)
   uint32_t local_idx = request.inode % BLOCKS_PER_GROUP;
   struct BlockBuffer block;
   read_blocks(&block, bgd_table.table[bgd].block_bitmap, 1);
-  uint8_t byte = block_buffer.buf[local_idx / 8];
+  uint8_t byte = block.buf[local_idx / 8];
   uint8_t offset = 7 - local_idx % 8;
   if (!((byte >> offset) & 1u))
   {

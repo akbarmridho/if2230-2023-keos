@@ -1,5 +1,4 @@
 #include "../lib-header/stdtype.h"
-#include "../filesystem/ext2-api.h"
 #include "../user/sys/sys.h"
 #include "../lib-header/string.h"
 #include "../lib-header/math.h"
@@ -232,6 +231,80 @@ int main(void)
             request.buf = buffer;
 
             ls(&request, dirname, name_len);
+        }
+        else if (!strcmp(arg, "cp", len))
+        {
+            // cp {src} {dst}
+            char *src = arg + len;
+            char *ext;
+            uint8_t src_len;
+            next_arg(&src, &src_len);
+            char *dst = src + src_len + 1;
+            if (separate_filename_extension(&src, &src_len, &ext) != 0)
+            {
+                continue;
+            }
+            if (src_len == 0)
+            {
+                puts("Missing source file\n");
+            }
+
+            char *extdst;
+            uint8_t dst_len;
+            next_arg(&dst, &dst_len);
+            if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
+            {
+                continue;
+            }
+            if (dst_len == 0)
+            {
+                puts("Missing destination file\n");
+                continue;
+            }
+            request.name = src;
+            request.inode = currentdirnode;
+            request.name_len = src_len;
+            request.buffer_size = BLOCK_SIZE * 4;
+            for (int i = 0; i < 3; i++)
+            {
+                request.ext[i] = ext[i];
+            }
+            request.inode_only = FALSE;
+            int8_t readretval = sys_read(&request);
+            if (readretval != 0)
+            {
+                puts("Fail to read file\n");
+                readretval = sys_read_directory(&request);
+                if (readretval != 0)
+                {
+                    puts("Fail to read folder\n");
+                }
+                else
+                {
+                    uint32_t offset = get_directory_first_child_offset(request.buf);
+                    struct EXT2DirectoryEntry *entry = get_directory_entry(request.buf, offset);
+                    if (entry->inode != 0)
+                    {
+                        puts("Folder is not empty, cannot copy\n");
+                        continue;
+                    }
+                    continue;
+                }
+                continue;
+            }
+
+            request.name = dst;
+            request.name_len = dst_len;
+            int8_t writeretval = sys_write(&request);
+            if (writeretval != 0)
+            {
+                puts("Fail to write file\n");
+                continue;
+            }
+            else
+            {
+                puts("Copy successful\n");
+            }
         }
         else if (!strcmp(arg, "cat", len))
         {
