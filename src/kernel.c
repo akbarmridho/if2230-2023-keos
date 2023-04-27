@@ -10,6 +10,7 @@
 #include "filesystem/ext2.h"
 #include "lib-header/cmos.h"
 #include "lib-header/paging.h"
+#include "lib-header/memory.h"
 
 void kernel_setup(void)
 {
@@ -24,6 +25,8 @@ void kernel_setup(void)
 
     gdt_install_tss();
     set_tss_register();
+
+    initialize_memory();
 
     // struct BlockBuffer bbuf[10];
     // for (uint32_t i = 0; i < 10; i++)
@@ -99,8 +102,6 @@ void kernel_setup(void)
 
     // allocate_single_user_page_frame((void *)0x500000);
     // *((uint8_t *)0x500000) = 1;
-
-    allocate_single_user_page_frame((uint8_t *)0);
     // struct BlockBuffer buffer[4];
     // request.buf = buffer;
     // retval = read(request);

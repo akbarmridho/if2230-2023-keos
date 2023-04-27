@@ -86,6 +86,11 @@ int8_t allocate_single_user_page_frame(void *virtual_addr)
 
   update_page_directory_entry((void *)allocated_physical_address, virtual_addr, flag);
 
+  for (uint32_t i = 0; i < PAGE_FRAME_SIZE; i++)
+  { // zero the allocated memory
+    *((uint8_t *)(virtual_addr + i)) = 0;
+  }
+
   return 0;
 }
 
