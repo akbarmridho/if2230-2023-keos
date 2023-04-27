@@ -164,4 +164,10 @@ uint16_t get_directory_record_length(uint8_t name_len);
  */
 uint32_t get_directory_first_child_offset(void *ptr);
 
+/**
+ * @brief separate filename with extension
+ * @return filename, len_name, ext ( 0 success, 1 fail )
+ */
+int8_t separate_filename_extension(char **filename, uint8_t *len_name, char **ext);
+
 #endif
