@@ -122,6 +122,23 @@ void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
     puts("\n");
 }
 
+void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
+{
+    request->name = filename;
+    request->inode = currentdirnode;
+    request->buffer_size = BLOCK_SIZE * 4;
+    request->name_len = name_len;
+    request->inode_only = FALSE;
+    int8_t retval = sys_read(request);
+    if (retval != 0)
+    {
+        puts(filename);
+        puts(": No such file\n");
+        return;
+    }
+    puts(request->buf);
+    puts("\n");
+}
 int main(void)
 {
     struct EXT2DriverRequest request;
@@ -215,6 +232,19 @@ int main(void)
             request.buf = buffer;
 
             ls(&request, dirname, name_len);
+        }
+        else if (!strcmp(arg, "cat", len))
+        {
+            char *filename = arg + len;
+            uint8_t name_len;
+            next_arg(&filename, &name_len);
+            if (name_len == 0)
+            {
+                puts("missing filename arg\n");
+                continue;
+            }
+            request.buf = buffer;
+            cat(&request, filename, name_len);
         }
     }
 
