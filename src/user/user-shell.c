@@ -95,10 +95,19 @@ int main(void)
     while (TRUE)
     {
         command_input(buf, currentdir, 254);
-        if (!strcmp(buf, "cd ", 3))
+        char *arg = buf;
+        uint8_t len;
+        next_arg(&arg, &len);
+        if (!strcmp(arg, "cd", len))
         {
-            char *dirname = buf + 3;
-            uint8_t name_len = strlen(dirname);
+            char *dirname = arg + len;
+            uint8_t name_len;
+            next_arg(&dirname, &name_len);
+            if (name_len == 0)
+            {
+                dirname[0] = '/';
+                name_len = 1;
+            }
             request.buf = buffer;
             request.name = dirname;
             request.inode = currentdirnode;
@@ -117,10 +126,16 @@ int main(void)
                 resolve_new_path(dirname, name_len);
             }
         }
-        else if (!strcmp(buf, "mkdir ", 6))
+        else if (!strcmp(arg, "mkdir", len))
         {
-            char *dirname = buf + 6;
-            uint8_t name_len = strlen(dirname);
+            char *dirname = arg + len;
+            uint8_t name_len;
+            next_arg(&dirname, &name_len);
+            if (name_len == 0)
+            {
+                puts("missing filename arg\n");
+                continue;
+            }
             request.buf = buffer;
             request.name = dirname;
             request.inode = currentdirnode;

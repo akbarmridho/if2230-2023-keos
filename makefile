@@ -40,6 +40,7 @@ clean:
 reset_disk:
 	rm $(OUTPUT_FOLDER)/$(DISK_NAME).bin
 	@make disk
+	@make insert-shell
 
 disk:
 	@qemu-img create -f raw $(OUTPUT_FOLDER)/$(DISK_NAME).bin 4M
