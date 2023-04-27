@@ -11,25 +11,6 @@
 #include "lib-header/cmos.h"
 #include "lib-header/paging.h"
 
-void _syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
-{
-    __asm__ volatile("mov %0, %%ebx"
-                     : /* <Empty> */
-                     : "r"(ebx));
-    __asm__ volatile("mov %0, %%ecx"
-                     : /* <Empty> */
-                     : "r"(ecx));
-    __asm__ volatile("mov %0, %%edx"
-                     : /* <Empty> */
-                     : "r"(edx));
-    __asm__ volatile("mov %0, %%eax"
-                     : /* <Empty> */
-                     : "r"(eax));
-    // Note : gcc usually use %eax as intermediate register,
-    //        so it need to be the last one to mov
-    __asm__ volatile("int $0x30");
-}
-
 void kernel_setup(void)
 {
     enter_protected_mode(&_gdt_gdtr);
@@ -43,7 +24,6 @@ void kernel_setup(void)
 
     gdt_install_tss();
     set_tss_register();
-    int8_t retval;
 
     // struct BlockBuffer bbuf[10];
     // for (uint32_t i = 0; i < 10; i++)
@@ -120,7 +100,7 @@ void kernel_setup(void)
     // allocate_single_user_page_frame((void *)0x500000);
     // *((uint8_t *)0x500000) = 1;
 
-    // allocate_single_user_page_frame((uint8_t *)0);
+    allocate_single_user_page_frame((uint8_t *)0);
     // struct BlockBuffer buffer[4];
     // request.buf = buffer;
     // retval = read(request);
@@ -134,7 +114,7 @@ void kernel_setup(void)
             .buffer_size = 0x100000,
             .name_len = 5,
         };
-
+    int8_t retval;
     retval = read(req);
     (void)retval;
 
