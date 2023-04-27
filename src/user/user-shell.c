@@ -4,6 +4,8 @@
 #include "../lib-header/math.h"
 #include "command.h"
 
+#define BLOCK_COUNT 16
+
 char currentdir[255] = "/";
 uint8_t currentdirlen = 1;
 
@@ -79,7 +81,7 @@ void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
 {
     request->name = dirname;
     request->inode = currentdirnode;
-    request->buffer_size = BLOCK_SIZE * 4;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
     request->name_len = name_len;
     request->inode_only = FALSE;
     int8_t retval = sys_read_directory(request);
@@ -125,7 +127,7 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
 {
     request->name = filename;
     request->inode = currentdirnode;
-    request->buffer_size = BLOCK_SIZE * 4;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
     request->name_len = name_len;
     request->inode_only = FALSE;
     int8_t retval = sys_read(request);
@@ -141,13 +143,13 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
 int main(void)
 {
     struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
-    struct BlockBuffer buffer[4];
+    struct BlockBuffer buffer[BLOCK_COUNT];
     // struct EXT2DriverRequest request = {
     //     .buf = &buffer,
     //     .name = "ikanaide",
     //     .ext = "\0\0\0",
     //     .inode = 1,
-    //     .buffer_size = BLOCK_SIZE * 4,
+    //     .buffer_size = BLOCK_SIZE * BLOCK_COUNT,
     //     .name_len = 8};
     // int8_t retcode = sys_read(request);
     // if (retcode == 0)
@@ -264,7 +266,7 @@ int main(void)
             request->name = src;
             request->inode = currentdirnode;
             request->name_len = src_len;
-            request->buffer_size = BLOCK_SIZE * 4;
+            request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
             for (int i = 0; i < 3; i++)
             {
                 request->ext[i] = ext[i];
