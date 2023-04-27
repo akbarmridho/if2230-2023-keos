@@ -35,9 +35,23 @@ void gets(char *buf, uint16_t size)
   syscall(4, (uint32_t)buf, size, 0);
 }
 
-int8_t sys_read(struct EXT2DriverRequest request)
+int8_t sys_read(struct EXT2DriverRequest *request)
 {
   uint32_t ret;
-  syscall(0, (uint32_t)&request, (uint32_t)&ret, 0);
+  syscall(0, (uint32_t)request, (uint32_t)&ret, 0);
+  return ret;
+}
+
+int8_t sys_write(struct EXT2DriverRequest *request)
+{
+  uint32_t ret;
+  syscall(2, (uint32_t)request, (uint32_t)&ret, 0);
+  return ret;
+}
+
+int8_t sys_read_directory(struct EXT2DriverRequest *request)
+{
+  uint32_t ret;
+  syscall(1, (uint32_t)request, (uint32_t)&ret, 0);
   return ret;
 }

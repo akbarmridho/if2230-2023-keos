@@ -647,6 +647,13 @@ bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2Driver
 int8_t read_directory(struct EXT2DriverRequest *prequest)
 {
   struct EXT2DriverRequest request = *prequest;
+  char dot[2] = ".";
+  if (!strcmp(request.name, "/", request.name_len))
+  {
+    request.inode = sblock.first_ino;
+    request.name = dot;
+    request.name_len = 1;
+  }
   int8_t retval = resolve_path(&request);
   if (retval != 0)
     return 3;
