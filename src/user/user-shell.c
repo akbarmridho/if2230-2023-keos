@@ -140,7 +140,7 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
 }
 int main(void)
 {
-    struct EXT2DriverRequest request;
+    struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
     struct BlockBuffer buffer[4];
     // struct EXT2DriverRequest request = {
     //     .buf = &buffer,
@@ -171,13 +171,13 @@ int main(void)
                 dirname[0] = '/';
                 name_len = 1;
             }
-            request.buf = buffer;
-            request.name = dirname;
-            request.inode = currentdirnode;
-            request.buffer_size = 0;
-            request.name_len = name_len;
-            request.inode_only = TRUE;
-            int8_t retval = sys_read_directory(&request);
+            request->buf = buffer;
+            request->name = dirname;
+            request->inode = currentdirnode;
+            request->buffer_size = 0;
+            request->name_len = name_len;
+            request->inode_only = TRUE;
+            int8_t retval = sys_read_directory(request);
             if (retval != 0)
             {
                 puts(dirname);
@@ -185,7 +185,7 @@ int main(void)
             }
             else
             {
-                currentdirnode = request.inode;
+                currentdirnode = request->inode;
                 resolve_new_path(dirname, name_len);
             }
         }
@@ -199,12 +199,12 @@ int main(void)
                 puts("missing filename arg\n");
                 continue;
             }
-            request.buf = buffer;
-            request.name = dirname;
-            request.inode = currentdirnode;
-            request.buffer_size = 0;
-            request.name_len = name_len;
-            int8_t retval = sys_write(&request);
+            request->buf = buffer;
+            request->name = dirname;
+            request->inode = currentdirnode;
+            request->buffer_size = 0;
+            request->name_len = name_len;
+            int8_t retval = sys_write(request);
             if (retval == 0)
             {
                 puts("Created directory ");
@@ -228,9 +228,9 @@ int main(void)
                 dirname[0] = '.';
                 name_len = 1;
             }
-            request.buf = buffer;
+            request->buf = buffer;
 
-            ls(&request, dirname, name_len);
+            ls(request, dirname, name_len);
         }
         else if (!strcmp(arg, "cp", len))
         {
@@ -261,28 +261,28 @@ int main(void)
                 puts("Missing destination file\n");
                 continue;
             }
-            request.name = src;
-            request.inode = currentdirnode;
-            request.name_len = src_len;
-            request.buffer_size = BLOCK_SIZE * 4;
+            request->name = src;
+            request->inode = currentdirnode;
+            request->name_len = src_len;
+            request->buffer_size = BLOCK_SIZE * 4;
             for (int i = 0; i < 3; i++)
             {
-                request.ext[i] = ext[i];
+                request->ext[i] = ext[i];
             }
-            request.inode_only = FALSE;
-            int8_t readretval = sys_read(&request);
+            request->inode_only = FALSE;
+            int8_t readretval = sys_read(request);
             if (readretval != 0)
             {
                 puts("Fail to read file\n");
-                readretval = sys_read_directory(&request);
+                readretval = sys_read_directory(request);
                 if (readretval != 0)
                 {
                     puts("Fail to read folder\n");
                 }
                 else
                 {
-                    uint32_t offset = get_directory_first_child_offset(request.buf);
-                    struct EXT2DirectoryEntry *entry = get_directory_entry(request.buf, offset);
+                    uint32_t offset = get_directory_first_child_offset(request->buf);
+                    struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
                     if (entry->inode != 0)
                     {
                         puts("Folder is not empty, cannot copy\n");
@@ -293,9 +293,9 @@ int main(void)
                 continue;
             }
 
-            request.name = dst;
-            request.name_len = dst_len;
-            int8_t writeretval = sys_write(&request);
+            request->name = dst;
+            request->name_len = dst_len;
+            int8_t writeretval = sys_write(request);
             if (writeretval != 0)
             {
                 puts("Fail to write file\n");
@@ -316,8 +316,8 @@ int main(void)
                 puts("missing filename arg\n");
                 continue;
             }
-            request.buf = buffer;
-            cat(&request, filename, name_len);
+            request->buf = buffer;
+            cat(request, filename, name_len);
         }
     }
 

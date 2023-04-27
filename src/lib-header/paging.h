@@ -127,4 +127,6 @@ int8_t allocate_single_user_page_frame(void *virtual_addr);
 
 uint32_t get_physical_address_page_at(uint32_t idx);
 
+void initialize_paging();
+
 #endif

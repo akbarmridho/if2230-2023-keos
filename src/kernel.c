@@ -26,6 +26,7 @@ void kernel_setup(void)
     gdt_install_tss();
     set_tss_register();
 
+    initialize_paging();
     initialize_memory();
 
     // struct BlockBuffer bbuf[10];
