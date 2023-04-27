@@ -66,12 +66,15 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         *((int8_t *)cpu.ecx) = read_directory((struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 2:
-        *((int8_t *)cpu.ecx) = write(*(struct EXT2DriverRequest *)cpu.ebx);
+        *((int8_t *)cpu.ecx) = read_next_directory_table(*(struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 3:
-        *((int8_t *)cpu.ecx) = delete (*(struct EXT2DriverRequest *)cpu.ebx);
+        *((int8_t *)cpu.ecx) = write(*(struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 4:
+        *((int8_t *)cpu.ecx) = delete (*(struct EXT2DriverRequest *)cpu.ebx);
+        break;
+    case 5:
         keyboard_state_activate();
         __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
         while (is_keyboard_blocking())
@@ -80,7 +83,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         get_keyboard_buffer(buf);
         memcpy((char *)cpu.ebx, buf, cpu.ecx);
         break;
-    case 5:
+    case 6:
         puts((char *)cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side
         break;
     default:

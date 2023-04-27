@@ -72,7 +72,7 @@ iso: dir kernel
 inserter:
 	@$(CC) -D external -Wno-builtin-declaration-mismatch -g \
 		$(SOURCE_FOLDER)/stdmem.c $(SOURCE_FOLDER)/filesystem/ext2.c $(SOURCE_FOLDER)/math.c \
-		$(SOURCE_FOLDER)/string.c $(SOURCE_FOLDER)/external-inserter.c \
+		$(SOURCE_FOLDER)/string.c $(SOURCE_FOLDER)/external-inserter.c $(SOURCE_FOLDER)/filesystem/ext2-api.c \
 		-o $(OUTPUT_FOLDER)/inserter
 
 user-shell:
@@ -80,9 +80,11 @@ user-shell:
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/user-shell.c -o user-shell.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/sys/sys.c -o sys.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user/command.c -o command.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/filesystem/ext2-api.c -o ext2-api.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/math.c -o math.o
 	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/string.c -o string.o
 	@$(LIN) -T $(SOURCE_FOLDER)/user/user-linker.ld -melf_i386 \
-		user-entry.o sys.o string.o command.o user-shell.o -o $(OUTPUT_FOLDER)/shell
+		user-entry.o sys.o ext2-api.o string.o math.o command.o user-shell.o -o $(OUTPUT_FOLDER)/shell
 	@echo Linking object shell object files and generate flat binary...
 	@$(LIN) -T $(SOURCE_FOLDER)/user/user-linker.ld -melf_i386 --oformat=elf32-i386\
 		user-entry.o user-shell.o -o $(OUTPUT_FOLDER)/shell_elf

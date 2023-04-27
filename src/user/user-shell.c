@@ -1,7 +1,8 @@
 #include "../lib-header/stdtype.h"
-#include "../filesystem/ext2.h"
+#include "../filesystem/ext2-api.h"
 #include "../user/sys/sys.h"
 #include "../lib-header/string.h"
+#include "../lib-header/math.h"
 #include "command.h"
 
 char currentdir[255] = "/";
@@ -75,6 +76,52 @@ void resolve_new_path(char *dirname, uint8_t name_len)
     resolve_new_path(dirname, name_len - len);
 }
 
+void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
+{
+    request->name = dirname;
+    request->inode = currentdirnode;
+    request->buffer_size = BLOCK_SIZE * 4;
+    request->name_len = name_len;
+    request->inode_only = FALSE;
+    int8_t retval = sys_read_directory(request);
+    if (retval != 0)
+    {
+        puts(dirname);
+        puts(": No such file or directory\n");
+        return;
+    }
+    uint32_t offset = get_directory_first_child_offset(request->buf);
+    struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+    while (entry->inode != 0)
+    {
+        if (entry->file_type == EXT2_FT_NEXT)
+        {
+            request->inode = entry->inode;
+            sys_read_next_directory(request);
+            offset = 0;
+            entry = get_directory_entry(request->buf, offset);
+            continue;
+        }
+        if (entry->file_type == EXT2_FT_REG_FILE)
+        {
+            puts(get_entry_name(entry));
+            if (entry->ext[0] != '\0')
+            {
+                puts(".");
+                puts(entry->ext);
+            }
+        }
+        else
+        {
+            puts_color(get_entry_name(entry), 0x9);
+        }
+        puts("  ");
+        offset += entry->rec_len;
+        entry = get_directory_entry(request->buf, offset);
+    }
+    puts("\n");
+}
+
 int main(void)
 {
     struct EXT2DriverRequest request;
@@ -113,7 +160,7 @@ int main(void)
             request.inode = currentdirnode;
             request.buffer_size = 0;
             request.name_len = name_len;
-            request.inode_only = FALSE;
+            request.inode_only = TRUE;
             int8_t retval = sys_read_directory(&request);
             if (retval != 0)
             {
@@ -154,6 +201,20 @@ int main(void)
                 puts(dirname);
                 puts("': Directory exists\n");
             }
+        }
+        else if (!strcmp(arg, "ls", len))
+        {
+            char *dirname = arg + len;
+            uint8_t name_len;
+            next_arg(&dirname, &name_len);
+            if (name_len == 0)
+            {
+                dirname[0] = '.';
+                name_len = 1;
+            }
+            request.buf = buffer;
+
+            ls(&request, dirname, name_len);
         }
     }
 

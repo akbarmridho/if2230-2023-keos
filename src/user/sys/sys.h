@@ -1,7 +1,7 @@
 #ifndef SYS_H
 #define SYS_H
 #include "../../lib-header/stdtype.h"
-#include "../../filesystem/ext2.h"
+#include "../../filesystem/ext2-api.h"
 
 void puts_color(const char *str, uint8_t color);
 void puts(const char *str);
@@ -15,4 +15,5 @@ int8_t sys_read_directory(struct EXT2DriverRequest *request);
 
 int8_t sys_write(struct EXT2DriverRequest *request);
 
+int8_t sys_read_next_directory(struct EXT2DriverRequest *request);
 #endif

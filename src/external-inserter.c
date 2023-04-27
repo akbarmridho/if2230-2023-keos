@@ -25,7 +25,7 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 void initialize_filesystem_ext2(void);
 int8_t read(struct EXT2DriverRequest request);
-int8_t read_directory(struct EXT2DriverRequest request);
+int8_t read_directory(struct EXT2DriverRequest *request);
 int8_t write(struct EXT2DriverRequest request);
 int8_t delete(struct EXT2DriverRequest request);
 

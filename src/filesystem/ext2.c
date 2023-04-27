@@ -2,6 +2,7 @@
 #include "../lib-header/stdmem.h"
 #include "../lib-header/math.h"
 #include "../lib-header/string.h"
+#include "ext2-api.h"
 
 #ifdef external
 #include <time.h>
@@ -104,11 +105,6 @@ struct EXT2Superblock sblock = {};
 struct BlockBuffer block_buffer = {};
 struct EXT2BGDTable bgd_table = {};
 struct EXT2INodeTable inode_table_buf = {};
-
-char *get_entry_name(void *entry)
-{
-  return entry + 12;
-}
 
 uint32_t inode_to_bgd(uint32_t inode)
 {
@@ -262,13 +258,6 @@ void initialize_filesystem_ext2(void)
   }
 }
 
-struct EXT2DirectoryEntry *get_directory_entry(void *ptr, uint32_t offset)
-{
-  struct EXT2DirectoryEntry *entry = (struct EXT2DirectoryEntry *)(ptr + offset);
-
-  return entry;
-}
-
 bool is_directory_empty(uint32_t inode)
 {
   uint32_t bgd = inode_to_bgd(inode);
@@ -289,18 +278,6 @@ bool is_directory_empty(uint32_t inode)
 
   // true if the first child is not valid entry
   return first_child->inode == 0;
-}
-
-uint16_t get_directory_record_length(uint8_t name_len)
-{
-  // directory entry record length is based by name length (+1 to also store null terminator)
-  uint16_t len = 4 + 2 + 1 + 1 + 4 + name_len + 1;
-  return divceil(len, 4) * 4;
-}
-
-struct EXT2DirectoryEntry *get_next_directory_entry(struct EXT2DirectoryEntry *entry)
-{
-  return get_directory_entry(entry, entry->rec_len);
 }
 
 uint32_t map_node_blocks(void *ptr, uint32_t blocks, uint32_t *locations, uint32_t *mapped_count, uint8_t depth)
@@ -545,16 +522,6 @@ void search_blocks_in_bgd(uint32_t bgd, uint32_t *locations, uint32_t blocks, ui
   }
 }
 
-uint32_t get_directory_first_child_offset(void *ptr)
-{
-  uint32_t offset = 0;
-  struct EXT2DirectoryEntry *entry = get_directory_entry(ptr, 0);
-  offset += entry->rec_len;
-  entry = get_next_directory_entry(entry);
-  offset += entry->rec_len;
-  return offset;
-}
-
 void load_inode_blocks(void *ptr, void *_block, uint32_t size)
 {
   uint32_t *block = (uint32_t *)_block;
@@ -790,6 +757,24 @@ int8_t read(struct EXT2DriverRequest request)
 
   // not found
   return 3;
+}
+
+int8_t read_next_directory_table(struct EXT2DriverRequest request)
+{
+  // check if blocks is legitly allocated
+  uint32_t bgd = request.inode / BLOCKS_PER_GROUP;
+  uint32_t local_idx = request.inode % BLOCKS_PER_GROUP;
+  struct BlockBuffer block;
+  read_blocks(&block, bgd_table.table[bgd].block_bitmap, 1);
+  uint8_t byte = block_buffer.buf[local_idx / 8];
+  uint8_t offset = 7 - local_idx % 8;
+  if (!((byte >> offset) & 1u))
+  {
+    // not allocated error
+    return 1;
+  }
+  read_blocks(request.buf, request.inode, 1);
+  return 0;
 }
 
 int8_t write(struct EXT2DriverRequest request)

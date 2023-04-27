@@ -34,12 +34,27 @@ SECTIONS {
         string.o(.rodata*)
     }
 
+    .math ALIGN(4):
+    {
+        math.o(.text)
+        math.o(.data)
+        math.o(.rodata*)
+    }
+
     .command ALIGN(4):
     {
         command.o(.text)
         command.o(.data)
         command.o(.rodata*)
     }
+
+    .ext2-api ALIGN(4):
+    {
+        ext2-api.o(.text)
+        ext2-api.o(.data)
+        ext2-api.o(.rodata*)
+    }
+
     _linker_user_program_end = .;
     ASSERT ((_linker_user_program_end <= 1 * 1024 * 1024), "Error: User program linking result is more than 1 MiB")
 }

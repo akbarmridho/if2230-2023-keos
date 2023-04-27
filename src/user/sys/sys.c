@@ -22,7 +22,7 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
 
 void puts_color(const char *str, uint8_t color)
 {
-  syscall(5, (uint32_t)str, strlen(str), color);
+  syscall(6, (uint32_t)str, strlen(str), color);
 }
 
 void puts(const char *str)
@@ -32,7 +32,7 @@ void puts(const char *str)
 
 void gets(char *buf, uint16_t size)
 {
-  syscall(4, (uint32_t)buf, size, 0);
+  syscall(5, (uint32_t)buf, size, 0);
 }
 
 int8_t sys_read(struct EXT2DriverRequest *request)
@@ -45,7 +45,7 @@ int8_t sys_read(struct EXT2DriverRequest *request)
 int8_t sys_write(struct EXT2DriverRequest *request)
 {
   uint32_t ret;
-  syscall(2, (uint32_t)request, (uint32_t)&ret, 0);
+  syscall(3, (uint32_t)request, (uint32_t)&ret, 0);
   return ret;
 }
 
@@ -53,5 +53,12 @@ int8_t sys_read_directory(struct EXT2DriverRequest *request)
 {
   uint32_t ret;
   syscall(1, (uint32_t)request, (uint32_t)&ret, 0);
+  return ret;
+}
+
+int8_t sys_read_next_directory(struct EXT2DriverRequest *request)
+{
+  uint32_t ret;
+  syscall(2, (uint32_t)request, (uint32_t)&ret, 0);
   return ret;
 }
