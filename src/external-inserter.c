@@ -28,7 +28,7 @@ int8_t read(struct EXT2DriverRequest request);
 int8_t read_directory(struct EXT2DriverRequest *request);
 int8_t write(struct EXT2DriverRequest request);
 int8_t delete(struct EXT2DriverRequest request);
-int8_t separate_filename_extension(char **filename, uint8_t *len_name, char **ext);
+int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ext)[4]);
 
 // Global variable
 uint8_t *image_storage;
@@ -70,29 +70,27 @@ int main(int argc, char *argv[])
     {
         fread(file_buffer, 4 * 1024 * 1024, 1, fptr_target);
         fseek(fptr_target, 0, SEEK_END);
-        filesize = ftell(fptr_target);
+        filesize = ftell(fptr_target) + 1;
         fclose(fptr_target);
     }
 
-    printf("Filename : %s\n", argv[1]);
     printf("Filesize : %ld bytes\n", filesize);
     uint8_t filename_length = strlen(argv[1]);
-    printf("File length: %d\n", filename_length);
 
     // EXT2 operations
     initialize_filesystem_ext2();
     char *name = argv[1];
-    char *ext;
-    int8_t retval = separate_filename_extension(&name, &filename_length, &ext);
-    struct EXT2DriverRequest request = {
-        .buf = file_buffer,
-        .buffer_size = filesize,
-        .name = name,
-        .name_len = filename_length};
-    for (int i = 0; i < 3; i++)
-    {
-        request.ext[i] = ext[i];
-    }
+    struct EXT2DriverRequest request;
+    int8_t retval = separate_filename_extension(&name, &filename_length, &request.ext);
+    printf("Filename       : %s\n", name);
+    printf("Filename length: %d\n", filename_length);
+    printf("File extension : %s\n", request.ext);
+
+    request.buf = file_buffer;
+    request.buffer_size = filesize;
+    request.name = name;
+    request.name_len = filename_length;
+
     sscanf(argv[2], "%u", &request.inode);
     sscanf(argv[1], "%8s", request.name);
 

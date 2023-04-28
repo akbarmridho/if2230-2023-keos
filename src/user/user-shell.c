@@ -236,11 +236,10 @@ int main(void)
         {
             // cp {src} {dst}
             char *src = arg + len;
-            char *ext;
             uint8_t src_len;
             next_arg(&src, &src_len);
             char *dst = src + src_len + 1;
-            if (separate_filename_extension(&src, &src_len, &ext) != 0)
+            if (separate_filename_extension(&src, &src_len, &request.ext) != 0)
             {
                 continue;
             }
@@ -248,8 +247,7 @@ int main(void)
             {
                 puts("Missing source file\n");
             }
-
-            char *extdst;
+            char extdst[4];
             uint8_t dst_len;
             next_arg(&dst, &dst_len);
             if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
@@ -265,10 +263,6 @@ int main(void)
             request.inode = currentdirnode;
             request.name_len = src_len;
             request.buffer_size = BLOCK_SIZE * 4;
-            for (int i = 0; i < 3; i++)
-            {
-                request.ext[i] = ext[i];
-            }
             request.inode_only = FALSE;
             int8_t readretval = sys_read(&request);
             if (readretval != 0)
@@ -295,6 +289,7 @@ int main(void)
 
             request.name = dst;
             request.name_len = dst_len;
+            strcpy(extdst, request.ext);
             int8_t writeretval = sys_write(&request);
             if (writeretval != 0)
             {
@@ -311,6 +306,12 @@ int main(void)
             char *filename = arg + len;
             uint8_t name_len;
             next_arg(&filename, &name_len);
+            uint8_t sep_retval;
+            sep_retval = separate_filename_extension(&filename, &name_len, &request.ext);
+            if (sep_retval != 0)
+            {
+                continue;
+            }
             if (name_len == 0)
             {
                 puts("missing filename arg\n");

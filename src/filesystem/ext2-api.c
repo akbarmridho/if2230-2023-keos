@@ -35,23 +35,38 @@ uint32_t get_directory_first_child_offset(void *ptr)
   return offset;
 }
 
-int8_t separate_filename_extension(char **filename, uint8_t *len_name, char **ext)
+int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ext)[4])
 {
+  char *ext_temp_ptr;
   for (int i = 0; i < *len_name; i++)
   {
     if ((*filename)[i] == '.')
     {
-      *ext = *filename + i + 1;
+      (*filename)[i] = '\0';
+      ext_temp_ptr = *filename + i + 1;
       int ext_len = *len_name - (i + 1);
       if (ext_len > 3 || ext_len == 0)
       {
         return 1;
       }
-      len_name -= ext_len + 1;
+      if (ext_len <= 3 && ext_len > 0)
+      {
+        for (int j = 0; j < 4; j++)
+        {
+          if (j < ext_len)
+          {
+            (*ext)[j] = ext_temp_ptr[j];
+          }
+          else
+          {
+            (*ext)[j] = '\0';
+          }
+        }
+      }
+      *len_name -= ext_len + 1;
       return 0;
     }
   }
-  *ext = *filename + *len_name;
   (*ext)[0] = '\0';
   return 0;
 }
