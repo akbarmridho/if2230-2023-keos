@@ -163,7 +163,95 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
             struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
             if (entry->inode != 0)
             {
-                puts("Folder is not empty, cannot copy\n");
+                // Folder is not empty
+                puts("Folder is not empty, did not specify -r (usage: cp -r {src} {dst})");
+                return;
+            }
+            else
+            {
+                request->name = dst;
+                request->inode = currentdirnode;
+                request->buffer_size = 0;
+                request->name_len = dst_len;
+                int8_t writefolderretval = sys_write(request);
+                if (writefolderretval == 0)
+                {
+                    puts("Copy successful\n");
+                    return;
+                }
+                else
+                {
+                    puts("Fail to write folder\n");
+                    return;
+                }
+            }
+        }
+    }
+
+    request->name = dst;
+    request->name_len = dst_len;
+    strcpy(extdst, request->ext);
+    int8_t writeretval = sys_write(request);
+    if (writeretval != 0)
+    {
+        puts("Fail to write file\n");
+        return;
+    }
+    else
+    {
+        puts("Copy successful\n");
+    }
+}
+
+void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst)
+{
+    request->name = src;
+    request->inode = currentdirnode;
+    request->name_len = src_len;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
+    int8_t readretval = sys_read(request);
+    if (readretval != 0)
+    {
+        puts("Fail to read file\n");
+        readretval = sys_read_directory(request);
+        if (readretval != 0)
+        {
+            puts("Fail to read folder\n");
+        }
+        else
+        {
+            uint32_t offset = get_directory_first_child_offset(request->buf);
+            struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+            while (entry->inode != 0)
+            {
+                // Folder is not empty
+                // Recursive call
+                if (entry->file_type == EXT2_FT_NEXT)
+                {
+                    request->inode = entry->inode;
+                    sys_read_next_directory(request);
+                    offset = 0;
+                    entry = get_directory_entry(request->buf, offset);
+
+                    continue;
+                }
+                if (entry->file_type == EXT2_FT_REG_FILE)
+                {
+                    puts(get_entry_name(entry));
+                    if (entry->ext[0] != '\0')
+                    {
+                        puts(".");
+                        puts(entry->ext);
+                    }
+                }
+                else
+                {
+                    puts_color(get_entry_name(entry), 0x9);
+                }
+                puts("  ");
+                offset += entry->rec_len;
+                entry = get_directory_entry(request->buf, offset);
                 return;
             }
             return;
@@ -283,31 +371,40 @@ int main(void)
         else if (!strcmp(arg, "cp", len))
         {
             // cp {src} {dst}
-            char *src = arg + len;
-            uint8_t src_len;
-            next_arg(&src, &src_len);
-            char *dst = src + src_len + 1;
-            if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
+            char *flag = arg + len;
+            uint8_t flag_len;
+            next_arg(&flag, &flag_len);
+            if (strcmp(flag, "-r", flag_len) != 0)
             {
-                continue;
+                char *src = flag;
+                uint8_t src_len = flag_len;
+                char *dst = src + src_len + 1;
+                if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
+                {
+                    continue;
+                }
+                if (src_len == 0)
+                {
+                    puts("Missing source file\n");
+                }
+                char extdst[4];
+                uint8_t dst_len;
+                next_arg(&dst, &dst_len);
+                if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
+                {
+                    continue;
+                }
+                if (dst_len == 0)
+                {
+                    puts("Missing destination file\n");
+                    continue;
+                }
+                cp(request, src, src_len, dst, dst_len, extdst);
             }
-            if (src_len == 0)
+            else
             {
-                puts("Missing source file\n");
+                puts("hehe\n");
             }
-            char extdst[4];
-            uint8_t dst_len;
-            next_arg(&dst, &dst_len);
-            if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
-            {
-                continue;
-            }
-            if (dst_len == 0)
-            {
-                puts("Missing destination file\n");
-                continue;
-            }
-            cp(request, src, src_len, dst, dst_len, extdst);
         }
         else if (!strcmp(arg, "cat", len))
         {
