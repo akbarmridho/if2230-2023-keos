@@ -140,6 +140,52 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
     puts(request->buf);
     puts("\n");
 }
+
+void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst)
+{
+    request->name = src;
+    request->inode = currentdirnode;
+    request->name_len = src_len;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
+    int8_t readretval = sys_read(request);
+    if (readretval != 0)
+    {
+        puts("Fail to read file\n");
+        readretval = sys_read_directory(request);
+        if (readretval != 0)
+        {
+            puts("Fail to read folder\n");
+        }
+        else
+        {
+            uint32_t offset = get_directory_first_child_offset(request->buf);
+            struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+            if (entry->inode != 0)
+            {
+                puts("Folder is not empty, cannot copy\n");
+                return;
+            }
+            return;
+        }
+        return;
+    }
+
+    request->name = dst;
+    request->name_len = dst_len;
+    strcpy(extdst, request->ext);
+    int8_t writeretval = sys_write(request);
+    if (writeretval != 0)
+    {
+        puts("Fail to write file\n");
+        return;
+    }
+    else
+    {
+        puts("Copy successful\n");
+    }
+}
+
 int main(void)
 {
     struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
@@ -261,47 +307,7 @@ int main(void)
                 puts("Missing destination file\n");
                 continue;
             }
-            request->name = src;
-            request->inode = currentdirnode;
-            request->name_len = src_len;
-            request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
-            request->inode_only = FALSE;
-            int8_t readretval = sys_read(request);
-            if (readretval != 0)
-            {
-                puts("Fail to read file\n");
-                readretval = sys_read_directory(request);
-                if (readretval != 0)
-                {
-                    puts("Fail to read folder\n");
-                }
-                else
-                {
-                    uint32_t offset = get_directory_first_child_offset(request->buf);
-                    struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
-                    if (entry->inode != 0)
-                    {
-                        puts("Folder is not empty, cannot copy\n");
-                        continue;
-                    }
-                    continue;
-                }
-                continue;
-            }
-
-            request->name = dst;
-            request->name_len = dst_len;
-            strcpy(extdst, request->ext);
-            int8_t writeretval = sys_write(request);
-            if (writeretval != 0)
-            {
-                puts("Fail to write file\n");
-                continue;
-            }
-            else
-            {
-                puts("Copy successful\n");
-            }
+            cp(request, src, src_len, dst, dst_len, extdst);
         }
         else if (!strcmp(arg, "cat", len))
         {
