@@ -4,6 +4,8 @@
 #include "../lib-header/math.h"
 #include "command.h"
 
+#define BLOCK_COUNT 16
+
 char currentdir[255] = "/";
 uint8_t currentdirlen = 1;
 
@@ -79,7 +81,7 @@ void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
 {
     request->name = dirname;
     request->inode = currentdirnode;
-    request->buffer_size = BLOCK_SIZE * 4;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
     request->name_len = name_len;
     request->inode_only = FALSE;
     int8_t retval = sys_read_directory(request);
@@ -125,7 +127,7 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
 {
     request->name = filename;
     request->inode = currentdirnode;
-    request->buffer_size = BLOCK_SIZE * 4;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
     request->name_len = name_len;
     request->inode_only = FALSE;
     int8_t retval = sys_read(request);
@@ -140,14 +142,14 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
 }
 int main(void)
 {
-    struct EXT2DriverRequest request;
-    struct BlockBuffer buffer[4];
+    struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
+    struct BlockBuffer buffer[BLOCK_COUNT];
     // struct EXT2DriverRequest request = {
     //     .buf = &buffer,
     //     .name = "ikanaide",
     //     .ext = "\0\0\0",
     //     .inode = 1,
-    //     .buffer_size = BLOCK_SIZE * 4,
+    //     .buffer_size = BLOCK_SIZE * BLOCK_COUNT,
     //     .name_len = 8};
     // int8_t retcode = sys_read(request);
     // if (retcode == 0)
@@ -171,13 +173,13 @@ int main(void)
                 dirname[0] = '/';
                 name_len = 1;
             }
-            request.buf = buffer;
-            request.name = dirname;
-            request.inode = currentdirnode;
-            request.buffer_size = 0;
-            request.name_len = name_len;
-            request.inode_only = TRUE;
-            int8_t retval = sys_read_directory(&request);
+            request->buf = buffer;
+            request->name = dirname;
+            request->inode = currentdirnode;
+            request->buffer_size = 0;
+            request->name_len = name_len;
+            request->inode_only = TRUE;
+            int8_t retval = sys_read_directory(request);
             if (retval != 0)
             {
                 puts(dirname);
@@ -185,7 +187,7 @@ int main(void)
             }
             else
             {
-                currentdirnode = request.inode;
+                currentdirnode = request->inode;
                 resolve_new_path(dirname, name_len);
             }
         }
@@ -199,12 +201,12 @@ int main(void)
                 puts("missing filename arg\n");
                 continue;
             }
-            request.buf = buffer;
-            request.name = dirname;
-            request.inode = currentdirnode;
-            request.buffer_size = 0;
-            request.name_len = name_len;
-            int8_t retval = sys_write(&request);
+            request->buf = buffer;
+            request->name = dirname;
+            request->inode = currentdirnode;
+            request->buffer_size = 0;
+            request->name_len = name_len;
+            int8_t retval = sys_write(request);
             if (retval == 0)
             {
                 puts("Created directory ");
@@ -228,9 +230,9 @@ int main(void)
                 dirname[0] = '.';
                 name_len = 1;
             }
-            request.buf = buffer;
+            request->buf = buffer;
 
-            ls(&request, dirname, name_len);
+            ls(request, dirname, name_len);
         }
         else if (!strcmp(arg, "cp", len))
         {
@@ -239,7 +241,7 @@ int main(void)
             uint8_t src_len;
             next_arg(&src, &src_len);
             char *dst = src + src_len + 1;
-            if (separate_filename_extension(&src, &src_len, &request.ext) != 0)
+            if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
             {
                 continue;
             }
@@ -259,24 +261,24 @@ int main(void)
                 puts("Missing destination file\n");
                 continue;
             }
-            request.name = src;
-            request.inode = currentdirnode;
-            request.name_len = src_len;
-            request.buffer_size = BLOCK_SIZE * 4;
-            request.inode_only = FALSE;
-            int8_t readretval = sys_read(&request);
+            request->name = src;
+            request->inode = currentdirnode;
+            request->name_len = src_len;
+            request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+            request->inode_only = FALSE;
+            int8_t readretval = sys_read(request);
             if (readretval != 0)
             {
                 puts("Fail to read file\n");
-                readretval = sys_read_directory(&request);
+                readretval = sys_read_directory(request);
                 if (readretval != 0)
                 {
                     puts("Fail to read folder\n");
                 }
                 else
                 {
-                    uint32_t offset = get_directory_first_child_offset(request.buf);
-                    struct EXT2DirectoryEntry *entry = get_directory_entry(request.buf, offset);
+                    uint32_t offset = get_directory_first_child_offset(request->buf);
+                    struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
                     if (entry->inode != 0)
                     {
                         puts("Folder is not empty, cannot copy\n");
@@ -287,10 +289,10 @@ int main(void)
                 continue;
             }
 
-            request.name = dst;
-            request.name_len = dst_len;
-            strcpy(extdst, request.ext);
-            int8_t writeretval = sys_write(&request);
+            request->name = dst;
+            request->name_len = dst_len;
+            strcpy(extdst, request->ext);
+            int8_t writeretval = sys_write(request);
             if (writeretval != 0)
             {
                 puts("Fail to write file\n");
@@ -307,7 +309,7 @@ int main(void)
             uint8_t name_len;
             next_arg(&filename, &name_len);
             uint8_t sep_retval;
-            sep_retval = separate_filename_extension(&filename, &name_len, &request.ext);
+            sep_retval = separate_filename_extension(&filename, &name_len, &request->ext);
             if (sep_retval != 0)
             {
                 continue;
@@ -317,8 +319,8 @@ int main(void)
                 puts("missing filename arg\n");
                 continue;
             }
-            request.buf = buffer;
-            cat(&request, filename, name_len);
+            request->buf = buffer;
+            cat(request, filename, name_len);
         }
     }
 

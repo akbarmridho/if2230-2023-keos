@@ -4,6 +4,7 @@
 #include "../lib-header/framebuffer.h"
 #include "../filesystem/ext2.h"
 #include "../lib-header/stdmem.h"
+#include "../lib-header/memory.h"
 #include "./idt.h"
 
 struct TSSEntry _interrupt_tss_entry = {
@@ -85,6 +86,12 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         break;
     case 6:
         puts((char *)cpu.ebx, cpu.ecx, cpu.edx); // Modified puts() on kernel side
+        break;
+    case 7:
+        *((uint32_t *)cpu.ebx) = malloc(cpu.ecx);
+        break;
+    case 8:
+        *((bool *)cpu.ebx) = free((void *)cpu.ecx);
         break;
     default:
         break;

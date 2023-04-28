@@ -18,9 +18,7 @@ __attribute__((aligned(0x1000))) struct PageDirectory _paging_kernel_page_direct
         },
     }};
 
-struct PhysicalPageDirectory _paging_physical_page_directory = {
-    .table = {
-        -1}};
+struct PhysicalPageDirectory _paging_physical_page_directory = {};
 
 static struct PageDriverState page_driver_state = {
     .last_available_physical_addr = (uint8_t *)0 + PAGE_FRAME_SIZE,
@@ -67,6 +65,7 @@ int8_t allocate_single_user_page_frame(void *virtual_addr)
     }
     else
     {
+      _paging_physical_page_directory.table[i] = page_index;
       found = TRUE;
     }
   }
@@ -86,6 +85,11 @@ int8_t allocate_single_user_page_frame(void *virtual_addr)
 
   update_page_directory_entry((void *)allocated_physical_address, virtual_addr, flag);
 
+  for (uint32_t i = 0; i < PAGE_FRAME_SIZE; i++)
+  { // zero the allocated memory
+    *((uint8_t *)(virtual_addr + i)) = 0;
+  }
+
   return 0;
 }
 
@@ -95,4 +99,12 @@ void flush_single_tlb(void *virtual_addr)
                : /* <Empty> */
                : "b"(virtual_addr)
                : "memory");
+}
+
+void initialize_paging()
+{
+  for (uint32_t i = 0; i < PAGE_ENTRY_COUNT; i++)
+  {
+    _paging_physical_page_directory.table[i] = -1;
+  }
 }

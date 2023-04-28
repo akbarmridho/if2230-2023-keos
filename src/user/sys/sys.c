@@ -62,3 +62,21 @@ int8_t sys_read_next_directory(struct EXT2DriverRequest *request)
   syscall(2, (uint32_t)request, (uint32_t)&ret, 0);
   return ret;
 }
+
+void *malloc(uint32_t size)
+{
+  uint32_t retval;
+
+  syscall(7, (uint32_t)&retval, size, 0);
+
+  return (void *)retval;
+}
+
+bool free(void *ptr)
+{
+  bool retval;
+
+  syscall(8, (uint32_t)&retval, (uint32_t)ptr, 0);
+
+  return retval;
+}
