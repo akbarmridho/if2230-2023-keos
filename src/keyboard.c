@@ -287,6 +287,8 @@ void keyboard_state_activate(void)
     memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
     keyboard_state.buffer_index = 0;
     keyboard_state.keyboard_input_on = TRUE;
+    framebuffer_state.start_col = framebuffer_state.col;
+    framebuffer_state.start_row = framebuffer_state.row;
 }
 
 // Deactivate keyboard ISR / stop listening keyboard interrupt
@@ -326,6 +328,11 @@ bool is_shift()
     return keyboard_state.shift_left || keyboard_state.shift_right;
 }
 
+uint8_t get_current_buffer_index()
+{
+    return framebuffer_state.col - framebuffer_state.start_col + (framebuffer_state.row - framebuffer_state.start_row) * COLUMN;
+}
+
 void keyboard_isr(void)
 {
     if (!keyboard_state.keyboard_input_on)
@@ -352,6 +359,30 @@ void keyboard_isr(void)
         case 0xb6:
             keyboard_state.shift_right = FALSE;
             break;
+        case 0x4b:
+            // left arrow
+            if (get_current_buffer_index() == 0)
+                break;
+            framebuffer_state.col--;
+            if (framebuffer_state.col < 0)
+            {
+                framebuffer_state.col = COLUMN - 1;
+                framebuffer_state.row--;
+            }
+            framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
+            break;
+        case 0x4d:
+            // right arrow
+            if (get_current_buffer_index() == keyboard_state.buffer_index)
+                break;
+            framebuffer_state.col++;
+            if (framebuffer_state.col == COLUMN)
+            {
+                framebuffer_state.col = 0;
+                framebuffer_state.row++;
+            }
+            framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
+            break;
         default:
             break;
         }
@@ -363,13 +394,18 @@ void keyboard_isr(void)
             pic_ack(IRQ_KEYBOARD);
             return;
         }
+        uint8_t current_buffer_index = get_current_buffer_index();
         if (mapped_char == '\b')
         {
             // backspace
-            if (keyboard_state.buffer_index > 0)
+            if (current_buffer_index > 0)
             {
-                keyboard_state.buffer_index--;
-                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
+                if (keyboard_state.buffer_index > current_buffer_index)
+                {
+                    memcpy(keyboard_state.keyboard_buffer + current_buffer_index - 1, keyboard_state.keyboard_buffer + current_buffer_index, keyboard_state.buffer_index - current_buffer_index);
+                }
+                keyboard_state.keyboard_buffer[keyboard_state.buffer_index - 1] = 0;
+
                 if (framebuffer_state.col == 0)
                 {
                     framebuffer_state.row--;
@@ -385,7 +421,14 @@ void keyboard_isr(void)
                     framebuffer_state.col--;
                 }
 
-                framebuffer_write(framebuffer_state.row, framebuffer_state.col, ' ', 0xFF, 0);
+                int prevrow = framebuffer_state.row;
+                int prevcol = framebuffer_state.col;
+                puts(keyboard_state.keyboard_buffer + current_buffer_index - 1, keyboard_state.buffer_index - current_buffer_index, 0xF);
+                framebuffer_state.row = prevrow;
+                framebuffer_state.col = prevcol;
+
+                keyboard_state.buffer_index--;
+                framebuffer_write(framebuffer_state.start_row, framebuffer_state.start_col + keyboard_state.buffer_index, ' ', 0xFF, 0);
                 framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
             }
         }
@@ -407,10 +450,24 @@ void keyboard_isr(void)
             {
                 mapped_char = shift_map[(uint8_t)mapped_char];
             }
-            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = mapped_char;
+            for (int i = keyboard_state.buffer_index - 1; i >= current_buffer_index; i--)
+            {
+                keyboard_state.keyboard_buffer[i + 1] = keyboard_state.keyboard_buffer[i];
+            }
+            keyboard_state.keyboard_buffer[current_buffer_index] = mapped_char;
             keyboard_state.buffer_index++;
-
-            puts(&mapped_char, 1, 0xF);
+            int prevrow = framebuffer_state.row;
+            int prevcol = framebuffer_state.col;
+            prevcol++;
+            if (prevcol == COLUMN)
+            {
+                prevcol = 0;
+                prevrow++;
+            }
+            puts(keyboard_state.keyboard_buffer + current_buffer_index, keyboard_state.buffer_index - current_buffer_index, 0xF);
+            framebuffer_state.row = prevrow;
+            framebuffer_state.col = prevcol;
+            framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
         }
     }
     pic_ack(IRQ_KEYBOARD);

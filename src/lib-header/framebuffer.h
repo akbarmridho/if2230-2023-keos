@@ -13,6 +13,8 @@ struct FramebufferState
 {
   int row;
   int col;
+  int start_row;
+  int start_col;
 } __attribute((packed));
 
 extern struct FramebufferState framebuffer_state;

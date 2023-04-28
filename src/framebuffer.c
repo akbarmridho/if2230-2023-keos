@@ -64,6 +64,7 @@ void clear_screen(void)
 void scroll_up()
 {
     memcpy(MEMORY_FRAMEBUFFER, MEMORY_FRAMEBUFFER + COLUMN * 2, COLUMN * 2 * ROW - COLUMN * 2);
+    framebuffer_state.start_row--;
     framebuffer_state.row--;
     for (int i = 0; i < COLUMN; i++)
     {
