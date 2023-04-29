@@ -197,6 +197,9 @@ void start_snake()
     check_collision();
     update_framebuffer();
   } while (snake.alive);
+  start = COLUMN / 2 - 5;
+  strcpy("GAME OVER", chars + start + COLUMN * 3);
+  update_framebuffer();
   for (int i = 0; i < 5; i++)
   {
     waitsecond();
