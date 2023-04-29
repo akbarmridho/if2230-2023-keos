@@ -913,7 +913,6 @@ int8_t write(struct EXT2DriverRequest *request)
   struct EXT2INode new_node;
   uint32_t new_inode = allocate_node();
   entry->inode = new_inode;
-  request->inode = new_inode;
   // + 1 to also store null terminator if exist
   memcpy(get_entry_name(entry), request->name, request->name_len + 1);
   entry->name_len = request->name_len;
@@ -927,9 +926,11 @@ int8_t write(struct EXT2DriverRequest *request)
     // create folder
     entry->file_type = EXT2_FT_DIR;
     init_directory_table(&new_node, new_inode, request->inode);
+    request->inode = new_inode;
   }
   else
   {
+    request->inode = new_inode;
     entry->file_type = EXT2_FT_REG_FILE;
     memcpy(entry->ext, request->ext, 3);
     new_node.mode = EXT2_S_IFREG;

@@ -4,7 +4,7 @@ void waitsecond()
 {
     uint32_t current_timestamp = get_timestamp();
 
-    while (get_timestamp() - current_timestamp > 0)
+    while (get_timestamp() - current_timestamp < 1)
         ;
 }
 

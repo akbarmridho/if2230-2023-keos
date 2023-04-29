@@ -124,6 +124,11 @@ uint32_t get_timestamp(void)
   return result;
 }
 
+void rewrite_framebuffer(char *chars, uint8_t *fgs, uint8_t *bgs)
+{
+  syscall(15, (uint32_t)chars, (uint32_t)fgs, (uint32_t)bgs);
+}
+
 void read_rtc(uint16_t *year, uint16_t *month, uint16_t *day, uint16_t *hour, uint16_t *minute, uint16_t *second)
 {
   uint16_t *array[] = {year, month, day, hour, minute, second};
