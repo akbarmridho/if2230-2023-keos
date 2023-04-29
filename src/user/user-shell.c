@@ -188,139 +188,6 @@ void cat(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
   puts("\n");
 }
 
-void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst)
-{
-  request->name = src;
-  request->inode = currentdirnode;
-  request->name_len = src_len;
-  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
-  request->inode_only = FALSE;
-  int8_t readretval = sys_read(request);
-  if (readretval != 0)
-  {
-    puts("Fail to read file\n");
-    readretval = sys_read_directory(request);
-    if (readretval != 0)
-    {
-      puts("Fail to read folder\n");
-    }
-    else
-    {
-      uint32_t offset = get_directory_first_child_offset(request->buf);
-      struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
-      if (entry->inode != 0)
-      {
-        // Folder is not empty
-        puts("Folder is not empty, did not specify -r (usage: cp -r {src} {dst})");
-        return;
-      }
-      else
-      {
-        request->name = dst;
-        request->inode = currentdirnode;
-        request->buffer_size = 0;
-        request->name_len = dst_len;
-        int8_t writefolderretval = sys_write(request);
-        if (writefolderretval == 0)
-        {
-          puts("Copy successful\n");
-          return;
-        }
-        else
-        {
-          puts("Fail to write folder\n");
-          return;
-        }
-      }
-    }
-  }
-
-  request->name = dst;
-  request->name_len = dst_len;
-  strcpy(extdst, request->ext);
-  int8_t writeretval = sys_write(request);
-  if (writeretval != 0)
-  {
-    puts("Fail to write file\n");
-    return;
-  }
-  else
-  {
-    puts("Copy successful\n");
-  }
-}
-
-void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst)
-{
-  request->name = src;
-  request->inode = currentdirnode;
-  request->name_len = src_len;
-  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
-  request->inode_only = FALSE;
-  int8_t readretval = sys_read(request);
-  if (readretval != 0)
-  {
-    puts("Fail to read file\n");
-    readretval = sys_read_directory(request);
-    if (readretval != 0)
-    {
-      puts("Fail to read folder\n");
-    }
-    else
-    {
-      uint32_t offset = get_directory_first_child_offset(request->buf);
-      struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
-      while (entry->inode != 0)
-      {
-        // Folder is not empty
-        // Recursive call
-        if (entry->file_type == EXT2_FT_NEXT)
-        {
-          request->inode = entry->inode;
-          sys_read_next_directory(request);
-          offset = 0;
-          entry = get_directory_entry(request->buf, offset);
-
-          continue;
-        }
-        if (entry->file_type == EXT2_FT_REG_FILE)
-        {
-          puts(get_entry_name(entry));
-          if (entry->ext[0] != '\0')
-          {
-            puts(".");
-            puts(entry->ext);
-          }
-        }
-        else
-        {
-          puts_color(get_entry_name(entry), 0x9);
-        }
-        puts("  ");
-        offset += entry->rec_len;
-        entry = get_directory_entry(request->buf, offset);
-        return;
-      }
-      return;
-    }
-    return;
-  }
-
-  request->name = dst;
-  request->name_len = dst_len;
-  strcpy(extdst, request->ext);
-  int8_t writeretval = sys_write(request);
-  if (writeretval != 0)
-  {
-    puts("Fail to write file\n");
-    return;
-  }
-  else
-  {
-    puts("Copy successful\n");
-  }
-}
-
 void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len)
 {
   request->name = src;
@@ -639,7 +506,7 @@ int main()
           puts("Missing destination file\n");
           continue;
         }
-        cp(request, src, src_len, dst, dst_len, extdst);
+        cp(request, src, src_len, dst, dst_len, extdst, currentdirnode);
       }
       else
       {
@@ -667,7 +534,7 @@ int main()
           puts("Missing destination file\n");
           continue;
         }
-        cp(request, src, src_len, dst, dst_len, extdst);
+        cpr(request, src, src_len, dst, dst_len, extdst, currentdirnode);
       }
     }
     else if (!strcmp(arg, "cat", len))
