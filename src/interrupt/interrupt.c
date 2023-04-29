@@ -60,6 +60,10 @@ void pic_remap(void)
 
 void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptStack info)
 {
+    char *chars;
+    uint8_t *fgs;
+    uint8_t *bgs;
+
     switch (cpu.eax)
     {
     case 0:
@@ -140,9 +144,9 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         *((bool *)cpu.ebx) = get_timestamp();
         break;
     case 15:
-        uint8_t *chars = (uint8_t *)cpu.ebx;
-        uint8_t *fgs = (uint8_t *)cpu.ecx;
-        uint8_t *bgs = (uint8_t *)cpu.edx;
+        chars = (char *)cpu.ebx;
+        fgs = (uint8_t *)cpu.ecx;
+        bgs = (uint8_t *)cpu.edx;
         for (uint32_t i = 0; i < ROW; i++)
         {
             for (uint32_t j = 0; j < COLUMN; j++)
