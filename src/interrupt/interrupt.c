@@ -161,6 +161,9 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     uint16_t **values = (uint16_t **)cpu.ebx;
     read_rtc(values[0], values[1], values[2], values[3], values[4], values[5]);
     break;
+  case 17:
+    *((int8_t *)cpu.ecx) = move_dir(*(struct EXT2DriverRequest *)cpu.ebx, cpu.edx);
+    break;
   default:
     break;
   }

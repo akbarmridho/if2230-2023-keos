@@ -288,7 +288,10 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
     separate_filename_extension(&src, &src_len, &src_ext);
     request->name = dst;
     request->name_len = dst_len;
-    int8_t readretval = sys_read_directory(request);
+    request->inode = currentdirnode;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
+    readretval = sys_read_directory(request);
     if (readretval != 0)
     {
       // dst not a directory
@@ -341,6 +344,58 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
           return;
         default:
           puts("Unknown error\n");
+          return;
+        }
+      }
+    }
+  }
+  else
+  {
+    // src a valid directory
+    request->name = dst;
+    request->name_len = dst_len;
+    request->inode = currentdirnode;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
+    readretval = sys_read_directory(request);
+    if (readretval != 0)
+    {
+      // dst not a directory
+      puts("mv: cannot overwrite non-directory with directory\n");
+      return;
+    }
+    else
+    {
+      // dst a valid directory
+      uint32_t dst_inode = request->inode;
+      request->name = src;
+      request->inode = currentdirnode;
+      request->name_len = src_len;
+      request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+      request->inode_only = FALSE;
+
+      int8_t move_retval = sys_move_dir(request, dst_inode);
+      switch (move_retval)
+      // Error code: 0 success - 1 source folder not found - 2 invalid parent folder - 3 invalid destination folder - 4 folder already exist - -1 not found any block
+      {
+        {
+        case 0:
+          puts("Move successful\n");
+          return;
+        case 1:
+          puts("Folder to be moved not found\n");
+          return;
+        case 2:
+          puts("Parent folder not found\n");
+          return;
+        case 3:
+          puts("Destination folder not found\n");
+          return;
+        case 4:
+          puts("Folder already exists\n");
+          return;
+        case -1:
+          puts("Not found any block\n");
           return;
         }
       }

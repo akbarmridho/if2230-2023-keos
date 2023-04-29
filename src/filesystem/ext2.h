@@ -184,6 +184,16 @@ int8_t read_next_directory_table(struct EXT2DriverRequest request);
 int8_t write(struct EXT2DriverRequest *request);
 
 /**
+ * @brief EXT2 move, move a folder to another folder
+ *
+ * @param request request is the folder that will be moved
+ * @param new_parent_inode new parent folder inode
+ *
+ * @return Error code: 0 success - 1 source folder not found - 2 invalid parent folder - 3 invalid destination folder - 4 folder already exist - -1 not found any block
+ */
+int8_t move_dir(struct EXT2DriverRequest request, uint32_t new_parent_inode);
+
+/**
  * @brief EXT2 delete, delete a file or empty directory in file system
  *  @param request buf and buffer_size is unused, is_dir == true means delete folder (possible file with name same as folder)
  * @return Error code: 0 success - 1 not found - 2 folder is not empty - 3 parent folder invalid -1 unknown

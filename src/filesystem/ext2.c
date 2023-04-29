@@ -953,6 +953,200 @@ int8_t write(struct EXT2DriverRequest *request)
   return 0;
 }
 
+int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
+{
+  int8_t retval = resolve_path(&request_src);
+  if (retval != 0)
+    // invalid source folder
+    return 1;
+  uint32_t bgd = inode_to_bgd(request_src.inode);
+  uint32_t local_idx = inode_to_local(request_src.inode);
+
+  // get node corresponding to request_src.inode
+  read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
+
+  struct EXT2INode *node = &inode_table_buf.table[local_idx];
+
+  if (node->mode != EXT2_S_IFDIR)
+  {
+    // parent folder invalid
+    return 2;
+  }
+
+  uint32_t block_num = node->block[0];
+
+  // read the directory entry
+  struct BlockBuffer block;
+  read_blocks(&block, block_num, 1);
+
+  // get the first children entry
+  uint32_t offset = get_directory_first_child_offset(&block);
+  struct EXT2DirectoryEntry *entry = get_directory_entry(&block, offset);
+
+  struct BlockBuffer prev_table_block;
+  uint32_t prev_table_block_num = 0;
+  struct EXT2DirectoryEntry *prev_table_pointer_entry;
+
+  bool found = FALSE;
+
+  // search the requested entry
+  while (!found)
+  {
+    if (entry->inode == 0)
+      // directory entry not found
+      return 1;
+    if (entry->file_type == EXT2_FT_NEXT)
+    {
+      // continue to next directory table list
+      prev_table_block_num = block_num;
+      prev_table_block = block;
+      prev_table_pointer_entry = get_directory_entry(prev_table_block.buf, offset);
+
+      block_num = entry->inode;
+      read_blocks(&block, block_num, 1);
+      offset = 0;
+      entry = get_directory_entry(&block, offset);
+      continue;
+    }
+    if (is_directory_entry_same(entry, request_src, FALSE))
+    {
+      found = TRUE;
+    }
+    else
+    {
+      // get next linked list item
+      offset += entry->rec_len;
+      entry = get_directory_entry(&block, offset);
+    }
+  }
+
+  struct EXT2DirectoryEntry *next_entry = get_next_directory_entry(entry);
+
+  // deallocate_node(entry->inode);
+
+  uint32_t new_inode = entry->inode;
+
+  if (offset == 0 && (next_entry->inode == 0 || next_entry->file_type == EXT2_FT_NEXT))
+  {
+    // deallocate directory table
+    prev_table_pointer_entry->inode = next_entry->inode;
+    prev_table_pointer_entry->file_type = next_entry->file_type;
+    write_blocks(&prev_table_block, prev_table_block_num, 1);
+
+    deallocate_blocks(&block_num, 1);
+  }
+  else
+  {
+    // shift
+    memcpy(block.buf + offset, block.buf + offset + entry->rec_len, BLOCK_SIZE - offset - entry->rec_len);
+
+    write_blocks(&block, block_num, 1);
+  }
+
+  // search dist location
+  bgd = inode_to_bgd(dst_parent_inode);
+  local_idx = inode_to_local(dst_parent_inode);
+
+  // get node corresponding to request_src.inode
+  read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
+
+  node = &inode_table_buf.table[local_idx];
+
+  if (node->mode != EXT2_S_IFDIR)
+  {
+    // dst parent folder invalid
+    return 3;
+  }
+
+  block_num = node->block[0];
+
+  // read the directory entry
+  read_blocks(&block, block_num, 1);
+  uint16_t space_needed = entry->rec_len;
+  // need space for last item to be pointer to next directory table, so maximum space in block will be this
+  uint16_t space_total = BLOCK_SIZE - get_directory_record_length(0);
+
+  // get the first children entry
+  offset = get_directory_first_child_offset(&block);
+  entry = get_directory_entry(&block, offset);
+
+  found = FALSE;
+
+  // search for space in directory
+  while (!found)
+  {
+    if (entry->file_type == EXT2_FT_NEXT)
+    {
+      // continue to next directory table list
+      block_num = entry->inode;
+      read_blocks(&block, block_num, 1);
+      offset = 0;
+      entry = get_directory_entry(&block, offset);
+      continue;
+    }
+    if (entry->inode != 0)
+    {
+      if (is_directory_entry_same(entry, request_src, FALSE))
+      {
+        // folder already exist
+        return 4;
+      }
+      // get next linked list item
+      offset += entry->rec_len;
+      entry = get_directory_entry(&block, offset);
+      continue;
+    }
+
+    // directory entry is available
+    if (offset + space_needed <= space_total)
+    {
+      // can be used
+      found = TRUE;
+    }
+    else
+    {
+      // allocate new directory table
+      uint32_t next_block;
+      uint32_t found_count = 0;
+      search_blocks(bgd, &next_block, 1, &found_count);
+
+      if (found_count == 0)
+      {
+        // not found any block available
+        return -1;
+      }
+
+      entry->inode = next_block;
+      entry->name_len = 0;
+      entry->rec_len = get_directory_record_length(0);
+      entry->file_type = EXT2_FT_NEXT;
+
+      // update prev linked list directory
+      write_blocks(&block, block_num, 1);
+
+      // load new directory table
+      read_blocks(&block, next_block, 1);
+      found = TRUE;
+      block_num = next_block;
+      offset = 0;
+      entry = get_directory_entry(block.buf, 0);
+    }
+  }
+
+  entry->inode = new_inode;
+  // + 1 to also store null terminator if exist
+  memcpy(get_entry_name(entry), request_src.name, request_src.name_len + 1);
+  entry->name_len = request_src.name_len;
+  entry->rec_len = get_directory_record_length(entry->name_len);
+
+  // shift linked list terminator
+  get_next_directory_entry(entry)->inode = 0;
+
+  // update directory entry
+  write_blocks(&block, block_num, 1);
+  return 0;
+}
+
 int8_t delete(struct EXT2DriverRequest request)
 {
   int8_t retval = resolve_path(&request);

@@ -16,6 +16,8 @@ int8_t sys_read_directory(struct EXT2DriverRequest *request);
 
 int8_t sys_write(struct EXT2DriverRequest *request);
 
+int8_t sys_move_dir(struct EXT2DriverRequest *request, uint32_t new_parent_inode);
+
 int8_t sys_delete(struct EXT2DriverRequest *request);
 
 int8_t sys_read_next_directory(struct EXT2DriverRequest *request);

@@ -48,6 +48,12 @@ int8_t sys_write(struct EXT2DriverRequest *request)
   syscall(3, (uint32_t)request, (uint32_t)&ret, 0);
   return ret;
 }
+int8_t sys_move_dir(struct EXT2DriverRequest *request, uint32_t new_parent_inode)
+{
+  uint32_t ret;
+  syscall(17, (uint32_t)request, (uint32_t)&ret, new_parent_inode);
+  return ret;
+}
 
 int8_t sys_delete(struct EXT2DriverRequest *request)
 {
