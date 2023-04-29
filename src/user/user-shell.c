@@ -403,6 +403,15 @@ void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
     puts("file already exists. nano is write only\n");
     return;
   }
+
+  request->inode_only = TRUE;
+  retval = sys_read_directory(request);
+  if (retval == 0)
+  {
+    puts("Folder with the same name already exists. nano is write only\n");
+    return;
+  }
+
   uint32_t filesize;
   clear_screen();
   get_text(request->buf, BLOCK_SIZE * BLOCK_COUNT, &filesize);

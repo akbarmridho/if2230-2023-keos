@@ -1132,12 +1132,33 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
   memcpy(get_entry_name(entry), request_src.name, request_src.name_len + 1);
   entry->name_len = request_src.name_len;
   entry->rec_len = get_directory_record_length(entry->name_len);
+  entry->file_type = EXT2_FT_DIR;
 
   // shift linked list terminator
   get_next_directory_entry(entry)->inode = 0;
 
   // update directory entry
   write_blocks(&block, block_num, 1);
+
+  // updating dst directory table header
+  bgd = inode_to_bgd(dst_parent_inode);
+  local_idx = inode_to_local(dst_parent_inode);
+
+  // get node corresponding to request_src.inode
+  read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
+
+  node = &inode_table_buf.table[local_idx];
+  block_num = node->block[0];
+
+  // read the directory entry
+  read_blocks(&block, block_num, 1);
+  entry = get_directory_entry(&block, 0);
+  entry->inode = new_inode;
+  get_next_directory_entry(entry)->inode = dst_parent_inode;
+
+  // update directory entry
+  write_blocks(&block, block_num, 1);
+
   return 0;
 }
 
