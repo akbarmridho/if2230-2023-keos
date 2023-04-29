@@ -13,7 +13,6 @@ struct EXT2DriverRequest
     void *buf;
     char *name;
     uint8_t name_len;
-    char ext[4];
     uint32_t inode;
     uint32_t buffer_size;
 
@@ -28,7 +27,6 @@ int8_t read(struct EXT2DriverRequest request);
 int8_t read_directory(struct EXT2DriverRequest *request);
 int8_t write(struct EXT2DriverRequest *request);
 int8_t delete(struct EXT2DriverRequest request);
-int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ext)[4]);
 
 // Global variable
 uint8_t *image_storage;
@@ -94,10 +92,8 @@ int main(int argc, char *argv[])
     char *name = argv[1];
     struct EXT2DriverRequest request;
     struct EXT2DriverRequest reqread;
-    int8_t retval = separate_filename_extension(&name, &filename_length, &request.ext);
     printf("Filename       : %s\n", name);
     printf("Filename length: %d\n", filename_length);
-    printf("File extension : %s\n", request.ext);
 
     request.buf = file_buffer;
     request.buffer_size = filesize;

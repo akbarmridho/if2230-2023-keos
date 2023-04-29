@@ -22,11 +22,10 @@ Return value:
   2: file with new name already exist
   3: failed to delete old file
 */
-int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t oldname_len, char *old_ext, char *newname, uint8_t newname_len, char *new_ext)
+int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t oldname_len, char *newname, uint8_t newname_len)
 {
   request->name = oldname;
   request->name_len = oldname_len;
-  strcpy(old_ext, request->ext);
   request->inode = currentdirnode;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
@@ -39,7 +38,6 @@ int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t old
 
   request->name = newname;
   request->name_len = newname_len;
-  strcpy(new_ext, request->ext);
   request->inode = currentdirnode;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
@@ -52,7 +50,6 @@ int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t old
 
   request->name = oldname;
   request->name_len = oldname_len;
-  strcpy(old_ext, request->ext);
   request->inode = currentdirnode;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
@@ -147,7 +144,7 @@ Return value:
   4: unknown error
   5: failed to delete old file
 */
-int8_t move_file_to_folder(struct EXT2DriverRequest *request, char *filename, uint8_t name_len, char *ext, char *dirname, uint8_t dirname_len)
+int8_t move_file_to_folder(struct EXT2DriverRequest *request, char *filename, uint8_t name_len, char *dirname, uint8_t dirname_len)
 {
   // get directory inode
   request->name = dirname;
@@ -161,7 +158,6 @@ int8_t move_file_to_folder(struct EXT2DriverRequest *request, char *filename, ui
   // get file to buffer
   request->name = filename;
   request->name_len = name_len;
-  strcpy(ext, request->ext);
   request->inode = currentdirnode;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
@@ -196,7 +192,6 @@ int8_t move_file_to_folder(struct EXT2DriverRequest *request, char *filename, ui
   // delete old file
   request->name = filename;
   request->name_len = name_len;
-  strcpy(ext, request->ext);
   request->inode = currentdirnode;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
@@ -238,11 +233,6 @@ void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
     if (entry->file_type == EXT2_FT_REG_FILE)
     {
       puts(get_entry_name(entry));
-      if (entry->ext[0] != '\0')
-      {
-        puts(".");
-        puts(entry->ext);
-      }
     }
     else
     {
@@ -284,8 +274,6 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
   if (readretval != 0)
   {
     // src not a directory
-    char src_ext[4];
-    separate_filename_extension(&src, &src_len, &src_ext);
     request->name = dst;
     request->name_len = dst_len;
     request->inode = currentdirnode;
@@ -295,9 +283,7 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
     if (readretval != 0)
     {
       // dst not a directory
-      char dst_ext[4];
-      separate_filename_extension(&dst, &dst_len, &dst_ext);
-      int8_t rename_retval = rename_file(request, src, src_len, src_ext, dst, dst_len, dst_ext);
+      int8_t rename_retval = rename_file(request, src, src_len, dst, dst_len);
       switch (rename_retval)
       {
         {
@@ -323,7 +309,7 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
     else
     {
       // dst a valid directory
-      int8_t move_retval = move_file_to_folder(request, src, src_len, src_ext, dst, dst_len);
+      int8_t move_retval = move_file_to_folder(request, src, src_len, dst, dst_len);
       switch (move_retval)
       {
         {
@@ -426,11 +412,6 @@ void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
   if (retval == 0)
   {
     puts(filename);
-    if (request->ext[0] != '\0')
-    {
-      puts(".");
-      puts(request->ext);
-    }
     puts(" successfully written\n");
   }
   else
@@ -439,7 +420,7 @@ void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
   }
 }
 
-void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetname, char targetext[4], char *current_path, bool *found)
+void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetname, char *current_path, bool *found)
 {
   int8_t retval = sys_read_directory(request);
   if (retval != 0)
@@ -465,26 +446,12 @@ void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetnam
       char *filename = get_entry_name(entry);
 
       // filename sama
-      if (is_equal(filename, targetname) && is_equal(entry->ext, targetext))
+      if (is_equal(filename, targetname))
       {
-        // file tanpa ext
-        if (strlen(targetext) == 0)
-        {
-          char result[strlen(filename) + strlen(current_path) + 2]; // include path separator
-          append_path(current_path, filename, result);
-          puts(result);
-          puts("\n");
-        }
-        else // file dengan ext
-        {
-          char file_wext[strlen(filename) + strlen(targetext) + 2]; // include dot
-          append3(filename, ".", targetext, file_wext);
-
-          char result[strlen(file_wext) + strlen(current_path) + 2];
-          append_path(current_path, file_wext, result);
-          puts(result);
-          puts("\n");
-        }
+        char result[strlen(filename) + strlen(current_path) + 2]; // include path separator
+        append_path(current_path, filename, result);
+        puts(result);
+        puts("\n");
 
         *found = TRUE;
       }
@@ -495,7 +462,7 @@ void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetnam
       // panggil whereis juga
       char *foldername = get_entry_name(entry);
 
-      if ((strlen(targetext) == 0 && is_equal(foldername, targetname)) || (is_equal(foldername, targetdir)))
+      if (is_equal(foldername, targetname) || (is_equal(foldername, targetdir)))
       {
         char result[strlen(foldername) + strlen(current_path) + 2];
         append_path(current_path, foldername, result);
@@ -517,7 +484,7 @@ void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetnam
 
       char *new_current_path = malloc(strlen(current_path) + strlen(foldername) + 2);
       append_path(current_path, foldername, new_current_path);
-      whereis(newReq, targetdir, targetname, targetext, new_current_path, found);
+      whereis(newReq, targetdir, targetname, new_current_path, found);
 
       free(new_current_path);
       free(buffer);
@@ -585,6 +552,7 @@ int main()
       char *dirname = arg + len;
       uint8_t name_len;
       next_arg(&dirname, &name_len);
+      dirname[name_len] = '\0';
       if (name_len == 0)
       {
         puts("missing filename arg\n");
@@ -634,28 +602,20 @@ int main()
         char *src = flag;
         uint8_t src_len = flag_len;
         char *dst = src + src_len + 1;
-        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
-        {
-          continue;
-        }
         if (src_len == 0)
         {
           puts("Missing source file\n");
         }
-        char extdst[4];
         uint8_t dst_len;
         next_arg(&dst, &dst_len);
-        if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
-        {
-          continue;
-        }
         if (dst_len == 0)
         {
           puts("Missing destination file\n");
           continue;
         }
         request->inode = currentdirnode;
-        cp(request, src, src_len, dst, dst_len, extdst, currentdirnode);
+        dst[dst_len] = '\0';
+        cp(request, src, src_len, dst, dst_len, currentdirnode);
       }
       else
       {
@@ -663,28 +623,20 @@ int main()
         uint8_t src_len;
         next_arg(&src, &src_len);
         char *dst = src + src_len + 1;
-        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
-        {
-          continue;
-        }
         if (src_len == 0)
         {
           puts("Missing source file\n");
         }
-        char extdst[4];
         uint8_t dst_len;
         next_arg(&dst, &dst_len);
-        if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
-        {
-          continue;
-        }
         if (dst_len == 0)
         {
           puts("Missing destination file\n");
           continue;
         }
+        dst[dst_len] = '\0';
         request->inode = currentdirnode;
-        cpr(request, src, src_len, dst, dst_len, extdst, currentdirnode);
+        cpr(request, src, src_len, dst, dst_len, currentdirnode);
       }
     }
     else if (!strcmp(arg, "cat", len))
@@ -692,12 +644,6 @@ int main()
       char *filename = arg + len;
       uint8_t name_len;
       next_arg(&filename, &name_len);
-      uint8_t sep_retval;
-      sep_retval = separate_filename_extension(&filename, &name_len, &request->ext);
-      if (sep_retval != 0)
-      {
-        continue;
-      }
       if (name_len == 0)
       {
         puts("missing filename arg\n");
@@ -729,6 +675,7 @@ int main()
       char *next = dst + dst_len + 1;
       uint8_t next_len;
       next_arg(&next, &next_len);
+      dst[dst_len] = '\0';
       if (next_len == 0)
       {
         request->buf = buffer;
@@ -749,13 +696,7 @@ int main()
         puts("missing filename arg\n");
         continue;
       }
-      uint8_t sep_retval;
-      sep_retval = separate_filename_extension(&filename, &name_len, &request->ext);
-      if (sep_retval != 0)
-      {
-        puts("invalid filename\n");
-        continue;
-      }
+      filename[name_len] = '\0';
       nano(request, filename, name_len);
     }
     else if (!strcmp(arg, "clear", len))
@@ -776,20 +717,8 @@ int main()
       uint8_t name_len;
       next_arg(&filename, &name_len);
 
-      char ext[4] = {
-          '\0',
-      };
-
       char dirname[name_len];
       strcpy(filename, dirname);
-
-      uint8_t sep_retval;
-      sep_retval = separate_filename_extension(&filename, &name_len, &ext);
-      if (sep_retval != 0)
-      {
-        continue;
-      }
-
       bool found = FALSE;
 
       request->buf = buffer;
@@ -798,7 +727,7 @@ int main()
       request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
       request->name_len = 1;
       request->inode_only = FALSE;
-      whereis(request, dirname, filename, ext, "", &found);
+      whereis(request, dirname, filename, "", &found);
 
       if (!found)
       {
@@ -818,10 +747,6 @@ int main()
       {
         char *src = flag;
         uint8_t src_len = flag_len;
-        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
-        {
-          continue;
-        }
         if (src_len == 0)
         {
           puts("Missing source file\n");
@@ -835,10 +760,6 @@ int main()
         char *src = flag + flag_len + 1;
         uint8_t src_len;
         next_arg(&src, &src_len);
-        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
-        {
-          continue;
-        }
         if (src_len == 0)
         {
           puts("Missing source file\n");

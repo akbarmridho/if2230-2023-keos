@@ -111,7 +111,6 @@ void kernel_setup(void)
         {
             .buf = (uint8_t *)0,
             .name = "shell",
-            .ext = "\0\0\0",
             .inode = 1,
             .buffer_size = 0x100000,
             .name_len = 5,

@@ -31,7 +31,6 @@ struct EXT2DriverRequest
     void *buf;
     char *name;
     uint8_t name_len;
-    char ext[4];
     uint32_t inode;
     uint32_t buffer_size;
 
@@ -119,7 +118,6 @@ struct EXT2DirectoryEntry
     uint16_t rec_len; // displacement to the next directory entry from the start of the current directory entry.
     uint8_t name_len;
     uint8_t file_type;
-    char ext[4];
 
     // name array separated because it is dynamic
 } __attribute__((packed));
@@ -163,13 +161,5 @@ uint16_t get_directory_record_length(uint8_t name_len);
  * @return offset from the directory table
  */
 uint32_t get_directory_first_child_offset(void *ptr);
-
-/**
- * @brief separate filename with extension,
- * fail happen when there is no extension but there is dot in the filename,
- * or extension is longer than 3 chars
- * @return filename, len_name, ext ( 0 success, 1 fail )
- */
-int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ext)[4]);
 
 #endif

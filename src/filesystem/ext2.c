@@ -637,12 +637,7 @@ bool is_directory_entry_same(struct EXT2DirectoryEntry *entry, struct EXT2Driver
   if (memcmp(request.name, get_entry_name(entry), request.name_len))
     return FALSE;
 
-  // if folder, no need to check ext
-  if (!is_file)
-    return TRUE;
-
-  // check extension
-  return !strcmp(request.ext, entry->ext, 4);
+  return TRUE;
 }
 
 int8_t read_directory(struct EXT2DriverRequest *prequest)
@@ -932,7 +927,6 @@ int8_t write(struct EXT2DriverRequest *request)
   {
     request->inode = new_inode;
     entry->file_type = EXT2_FT_REG_FILE;
-    memcpy(entry->ext, request->ext, 3);
     new_node.mode = EXT2_S_IFREG;
     new_node.size_low = request->buffer_size;
     new_node.size_high = 0;

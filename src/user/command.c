@@ -28,7 +28,7 @@ void next_arg(char **pstr, uint8_t *len)
   }
 }
 
-void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst, uint32_t parent)
+void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, uint32_t parent)
 {
   request->name = src;
   request->name_len = src_len;
@@ -78,7 +78,6 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
   request->name = dst;
   request->name_len = dst_len;
   request->inode = parent;
-  strcpy(extdst, request->ext);
   int8_t writeretval = sys_write(request);
   if (writeretval != 0)
   {
@@ -91,7 +90,7 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
   }
 }
 
-void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst, uint32_t parent)
+void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, uint32_t parent)
 {
   request->name = src;
   request->name_len = src_len;
@@ -160,7 +159,6 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
         {
           char *filename = get_entry_name(entry);
           uint8_t name_len = entry->name_len;
-          char *ext = entry->ext;
           struct EXT2DriverRequest *newReq = malloc(sizeof(struct EXT2DriverRequest));
           struct BlockBuffer *buffer = malloc(sizeof(struct BlockBuffer) * BLOCK_COUNT);
           newReq->buf = buffer;
@@ -170,7 +168,7 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
           newReq->name = filename;
           newReq->name_len = name_len;
 
-          cp(newReq, filename, name_len, filename, name_len, ext, request->inode);
+          cp(newReq, filename, name_len, filename, name_len, request->inode);
           free(buffer);
           free(newReq);
         }
@@ -188,8 +186,7 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
           newReq->name = foldername;
           newReq->name_len = name_len;
 
-          char *ext = "";
-          cpr(newReq, foldername, name_len, foldername, name_len, ext, request->inode);
+          cpr(newReq, foldername, name_len, foldername, name_len, request->inode);
           free(buffer);
           free(newReq);
         }
@@ -204,7 +201,6 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
   }
 
   request->name_len = dst_len;
-  strcpy(extdst, request->ext);
   int8_t writeretval = sys_write(request);
   if (writeretval != 0)
   {
