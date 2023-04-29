@@ -722,10 +722,10 @@ int main()
       bool found = FALSE;
 
       request->buf = buffer;
-      request->name = ".";
-      request->inode = 1; // start from root
+      request->name = currentdir;
+      request->inode = currentdirnode; // start from root
       request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
-      request->name_len = 1;
+      request->name_len = currentdirlen;
       request->inode_only = FALSE;
       whereis(request, dirname, filename, "", &found);
 
