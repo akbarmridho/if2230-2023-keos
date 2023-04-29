@@ -253,8 +253,7 @@ void time()
 
 void help()
 {
-  puts("Documentation\n\n");
-  puts("Daftar perintah: \n");
+  puts("Available commands: \n");
   puts("cat filename          show content of file\n");
   puts("cd target             move current directory to target. support relative path\n");
   puts("clear                 clear current screen\n");

@@ -705,6 +705,7 @@ int main()
     }
     else if (!strcmp(arg, "help", len))
     {
+      puts("Documentation\n\n");
       help();
     }
     else if (!strcmp(arg, "time", len))
@@ -768,6 +769,11 @@ int main()
         request->inode = currentdirnode;
         rmr(request, src, src_len, currentdirnode);
       }
+    }
+    else
+    {
+      puts("Invalid command!\n\n");
+      help();
     }
   }
 
