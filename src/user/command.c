@@ -31,18 +31,18 @@ void next_arg(char **pstr, uint8_t *len)
 void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst, uint32_t parent)
 {
   request->name = src;
-  request->inode = parent;
   request->name_len = src_len;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
   int8_t readretval = sys_read(request);
   if (readretval != 0)
   {
-    puts("Not a file\n");
+    // puts("Not a file\n");
     readretval = sys_read_directory(request);
     if (readretval != 0)
     {
       puts("Fail to read folder\n");
+      return;
     }
     else
     {
@@ -77,6 +77,7 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
 
   request->name = dst;
   request->name_len = dst_len;
+  request->inode = parent;
   strcpy(extdst, request->ext);
   int8_t writeretval = sys_write(request);
   if (writeretval != 0)
@@ -93,14 +94,17 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
 void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst, uint32_t parent)
 {
   request->name = src;
-  request->inode = parent;
   request->name_len = src_len;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
   int8_t readretval = sys_read(request);
   if (readretval != 0)
   {
-    puts("Not a file\n");
+    // puts("Not a file\n");
+    request->name = src;
+    request->name_len = src_len;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
     readretval = sys_read_directory(request);
     if (readretval != 0)
     {
@@ -110,24 +114,38 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
     {
       uint32_t offset = get_directory_first_child_offset(request->buf);
       struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
-      while (entry->inode != 0)
+      int init = 0;
+      uint32_t prev_inode = request->inode;
+      int cont = 0;
+      request->inode = parent;
+      request->name = dst;
+      request->buffer_size = 0;
+      if (entry->inode == 0)
+      {
+        cont++;
+      }
+      while (entry->inode != 0 && cont == 0)
       {
         // Folder is not empty, iterate every entry in the folder
         // Make the folder
-        request->inode = parent;
-        request->name = dst;
-        request->name_len = dst_len;
-        request->buffer_size = 0;
-        int8_t writeretval = sys_write(request);
-        if (writeretval != 0)
+        if (init == 0)
         {
-          puts("Fail to write folder\n");
-          return;
+          request->name_len = dst_len;
+          request->buffer_size = 0;
+          int8_t writeretval = sys_write(request);
+          if (writeretval != 0)
+          {
+            puts("Fail to write folder\n");
+            return;
+          }
+          else
+          {
+            puts("Write folder successful\n");
+          }
+          init++;
+          // Request berisi folder parent dst yang baru dibuat
         }
-        else
-        {
-          puts("Copy successful\n");
-        }
+
         // Recursive call
         // Block habis, lanjut block berikutnya
         if (entry->file_type == EXT2_FT_NEXT)
@@ -148,11 +166,11 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
           newReq->buf = buffer;
           newReq->buffer_size = BLOCK_COUNT * BLOCK_SIZE;
           newReq->inode_only = FALSE;
-          newReq->inode = entry->inode;
+          newReq->inode = prev_inode;
           newReq->name = filename;
           newReq->name_len = name_len;
 
-          cp(request, filename, name_len, filename, name_len, ext, request->inode);
+          cp(newReq, filename, name_len, filename, name_len, ext, request->inode);
           free(buffer);
           free(newReq);
         }
@@ -166,7 +184,7 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
           newReq->buf = buffer;
           newReq->buffer_size = BLOCK_COUNT * BLOCK_SIZE;
           newReq->inode_only = FALSE;
-          newReq->inode = request->inode;
+          newReq->inode = prev_inode;
           newReq->name = foldername;
           newReq->name_len = name_len;
 
@@ -178,11 +196,13 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
         offset += entry->rec_len;
         entry = get_directory_entry(request->buf, offset);
       }
-      return;
+      if (cont == 0)
+      {
+        return;
+      }
     }
   }
 
-  request->name = dst;
   request->name_len = dst_len;
   strcpy(extdst, request->ext);
   int8_t writeretval = sys_write(request);

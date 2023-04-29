@@ -598,6 +598,7 @@ int main()
           puts("Missing destination file\n");
           continue;
         }
+        request->inode = currentdirnode;
         cp(request, src, src_len, dst, dst_len, extdst, currentdirnode);
       }
       else
@@ -626,6 +627,7 @@ int main()
           puts("Missing destination file\n");
           continue;
         }
+        request->inode = currentdirnode;
         cpr(request, src, src_len, dst, dst_len, extdst, currentdirnode);
       }
     }
