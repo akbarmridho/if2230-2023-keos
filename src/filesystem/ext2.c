@@ -857,7 +857,7 @@ int8_t write(struct EXT2DriverRequest *request)
     }
     if (entry->inode != 0)
     {
-      if (is_directory_entry_same(entry, *request, request->buffer_size != 0))
+      if (is_directory_entry_same(entry, *request, TRUE) || is_directory_entry_same(entry, *request, FALSE))
       {
         // folder / file already exist
         return 1;
@@ -947,7 +947,7 @@ int8_t write(struct EXT2DriverRequest *request)
   return 0;
 }
 
-int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
+int8_t move_dir(struct EXT2DriverRequest request_src, struct EXT2DriverRequest dst_request)
 {
   int8_t retval = resolve_path(&request_src);
   if (retval != 0)
@@ -967,15 +967,15 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
     return 2;
   }
 
-  uint32_t block_num = node->block[0];
+  uint32_t to_deleted_block_num = node->block[0];
 
   // read the directory entry
-  struct BlockBuffer block;
-  read_blocks(&block, block_num, 1);
+  struct BlockBuffer to_deleted_block;
+  read_blocks(&to_deleted_block, to_deleted_block_num, 1);
 
   // get the first children entry
-  uint32_t offset = get_directory_first_child_offset(&block);
-  struct EXT2DirectoryEntry *entry = get_directory_entry(&block, offset);
+  uint32_t to_deleted_offset = get_directory_first_child_offset(&to_deleted_block);
+  struct EXT2DirectoryEntry *entry = get_directory_entry(&to_deleted_block, to_deleted_offset);
 
   struct BlockBuffer prev_table_block;
   uint32_t prev_table_block_num = 0;
@@ -992,14 +992,14 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
     if (entry->file_type == EXT2_FT_NEXT)
     {
       // continue to next directory table list
-      prev_table_block_num = block_num;
-      prev_table_block = block;
-      prev_table_pointer_entry = get_directory_entry(prev_table_block.buf, offset);
+      prev_table_block_num = to_deleted_block_num;
+      prev_table_block = to_deleted_block;
+      prev_table_pointer_entry = get_directory_entry(prev_table_block.buf, to_deleted_offset);
 
-      block_num = entry->inode;
-      read_blocks(&block, block_num, 1);
-      offset = 0;
-      entry = get_directory_entry(&block, offset);
+      to_deleted_block_num = entry->inode;
+      read_blocks(&to_deleted_block, to_deleted_block_num, 1);
+      to_deleted_offset = 0;
+      entry = get_directory_entry(&to_deleted_block, to_deleted_offset);
       continue;
     }
     if (is_directory_entry_same(entry, request_src, FALSE))
@@ -1009,33 +1009,33 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
     else
     {
       // get next linked list item
-      offset += entry->rec_len;
-      entry = get_directory_entry(&block, offset);
+      to_deleted_offset += entry->rec_len;
+      entry = get_directory_entry(&to_deleted_block, to_deleted_offset);
     }
   }
 
-  struct EXT2DirectoryEntry *next_entry = get_next_directory_entry(entry);
-
-  // deallocate_node(entry->inode);
+  struct EXT2DirectoryEntry *to_deleted_entry = get_next_directory_entry(entry);
 
   uint32_t new_inode = entry->inode;
 
-  if (offset == 0 && (next_entry->inode == 0 || next_entry->file_type == EXT2_FT_NEXT))
-  {
-    // deallocate directory table
-    prev_table_pointer_entry->inode = next_entry->inode;
-    prev_table_pointer_entry->file_type = next_entry->file_type;
-    write_blocks(&prev_table_block, prev_table_block_num, 1);
+  struct BlockBuffer dir_buffer;
+  dst_request.buf = &dir_buffer;
+  dst_request.inode_only = FALSE;
+  retval = read_directory(&dst_request);
 
-    deallocate_blocks(&block_num, 1);
-  }
-  else
+  if (retval != 0 && retval != 2)
   {
-    // shift
-    memcpy(block.buf + offset, block.buf + offset + entry->rec_len, BLOCK_SIZE - offset - entry->rec_len);
-
-    write_blocks(&block, block_num, 1);
+    return 3;
   }
+
+  if (retval == 2)
+  {
+    request_src.name = dst_request.name;
+    request_src.name_len = dst_request.name_len;
+  }
+
+  // move folder to another folder
+  uint32_t dst_parent_inode = dst_request.inode;
 
   // search dist location
   bgd = inode_to_bgd(dst_parent_inode);
@@ -1051,18 +1051,28 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
     // dst parent folder invalid
     return 3;
   }
+  uint32_t block_num = node->block[0];
+  struct BlockBuffer *block_ptr;
+  struct BlockBuffer block;
 
-  block_num = node->block[0];
-
-  // read the directory entry
-  read_blocks(&block, block_num, 1);
-  uint16_t space_needed = entry->rec_len;
+  if (block_num == to_deleted_block_num)
+  {
+    // if  block same, sync
+    block_ptr = &to_deleted_block;
+  }
+  else
+  {
+    // read the directory entry
+    block_ptr = &block;
+    read_blocks(&block, block_num, 1);
+  }
+  uint16_t space_needed = get_directory_record_length(request_src.name_len);
   // need space for last item to be pointer to next directory table, so maximum space in block will be this
   uint16_t space_total = BLOCK_SIZE - get_directory_record_length(0);
 
   // get the first children entry
-  offset = get_directory_first_child_offset(&block);
-  entry = get_directory_entry(&block, offset);
+  uint32_t offset = get_directory_first_child_offset(block_ptr);
+  entry = get_directory_entry(block_ptr, offset);
 
   found = FALSE;
 
@@ -1073,21 +1083,30 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
     {
       // continue to next directory table list
       block_num = entry->inode;
-      read_blocks(&block, block_num, 1);
+      if (block_num == to_deleted_block_num)
+      {
+        // if  block same, sync
+        block_ptr = &to_deleted_block;
+      }
+      else
+      {
+        block_ptr = &block;
+        read_blocks(block_ptr, block_num, 1);
+      }
       offset = 0;
-      entry = get_directory_entry(&block, offset);
+      entry = get_directory_entry(block_ptr, offset);
       continue;
     }
     if (entry->inode != 0)
     {
-      if (is_directory_entry_same(entry, request_src, FALSE))
+      if (is_directory_entry_same(entry, request_src, FALSE) || is_directory_entry_same(entry, request_src, TRUE))
       {
-        // folder already exist
+        // file / folder already exist
         return 4;
       }
       // get next linked list item
       offset += entry->rec_len;
-      entry = get_directory_entry(&block, offset);
+      entry = get_directory_entry(block_ptr, offset);
       continue;
     }
 
@@ -1116,10 +1135,10 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
       entry->file_type = EXT2_FT_NEXT;
 
       // update prev linked list directory
-      write_blocks(&block, block_num, 1);
+      write_blocks(block_ptr, block_num, 1);
 
       // load new directory table
-      read_blocks(&block, next_block, 1);
+      read_blocks(block_ptr, next_block, 1);
       found = TRUE;
       block_num = next_block;
       offset = 0;
@@ -1138,11 +1157,11 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
   get_next_directory_entry(entry)->inode = 0;
 
   // update directory entry
-  write_blocks(&block, block_num, 1);
+  write_blocks(block_ptr, block_num, 1);
 
   // updating dst directory table header
-  bgd = inode_to_bgd(dst_parent_inode);
-  local_idx = inode_to_local(dst_parent_inode);
+  bgd = inode_to_bgd(new_inode);
+  local_idx = inode_to_local(new_inode);
 
   // get node corresponding to request_src.inode
   read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
@@ -1150,14 +1169,40 @@ int8_t move_dir(struct EXT2DriverRequest request_src, uint32_t dst_parent_inode)
   node = &inode_table_buf.table[local_idx];
   block_num = node->block[0];
 
-  // read the directory entry
-  read_blocks(&block, block_num, 1);
-  entry = get_directory_entry(&block, 0);
+  if (block_num == to_deleted_block_num)
+  {
+    // if  block same, sync
+    block_ptr = &to_deleted_block;
+  }
+  else
+  {
+    // read the directory entry
+    block_ptr = &block;
+    read_blocks(&block, block_num, 1);
+  }
+  entry = get_directory_entry(block_ptr, 0);
   entry->inode = new_inode;
   get_next_directory_entry(entry)->inode = dst_parent_inode;
 
   // update directory entry
-  write_blocks(&block, block_num, 1);
+  write_blocks(block_ptr, block_num, 1);
+
+  if (to_deleted_offset == 0 && (to_deleted_entry->inode == 0 || to_deleted_entry->file_type == EXT2_FT_NEXT))
+  {
+    // deallocate directory table
+    prev_table_pointer_entry->inode = to_deleted_entry->inode;
+    prev_table_pointer_entry->file_type = to_deleted_entry->file_type;
+    write_blocks(&prev_table_block, prev_table_block_num, 1);
+
+    deallocate_blocks(&to_deleted_block_num, 1);
+  }
+  else
+  {
+    // shift
+    memcpy(to_deleted_block.buf + to_deleted_offset, to_deleted_block.buf + to_deleted_offset + entry->rec_len, BLOCK_SIZE - to_deleted_offset - entry->rec_len);
+
+    write_blocks(&to_deleted_block, to_deleted_block_num, 1);
+  }
 
   return 0;
 }

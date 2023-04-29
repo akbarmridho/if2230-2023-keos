@@ -187,11 +187,11 @@ int8_t write(struct EXT2DriverRequest *request);
  * @brief EXT2 move, move a folder to another folder
  *
  * @param request request is the folder that will be moved
- * @param new_parent_inode new parent folder inode
+ * @param dst_request dst_request is the destination folder
  *
- * @return Error code: 0 success - 1 source folder not found - 2 invalid parent folder - 3 invalid destination folder - 4 folder already exist - -1 not found any block
+ * @return Error code: 0 success - 1 source folder not found - 2 invalid parent folder - 3 invalid destination folder - 4 file / folder already exist - -1 not found any block
  */
-int8_t move_dir(struct EXT2DriverRequest request, uint32_t new_parent_inode);
+int8_t move_dir(struct EXT2DriverRequest request_src, struct EXT2DriverRequest dst_request);
 
 /**
  * @brief EXT2 delete, delete a file or empty directory in file system
