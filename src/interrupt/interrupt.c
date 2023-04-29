@@ -138,6 +138,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         break;
     case 14:
         *((bool *)cpu.ebx) = get_timestamp();
+        break;
     case 15:
         uint8_t *chars = (uint8_t *)cpu.ebx;
         uint8_t *fgs = (uint8_t *)cpu.ecx;
