@@ -9,6 +9,8 @@
   - [Program Structure](#program-structure)
   - [EXT2 Filesystem](#ext2-filesystem)
     - [Directory Entry](#directory-entry)
+  - [Snake Game](#snake-game)
+  - [Simple Text Editor (nano)](#simple-text-editor-nano)
 
 ## Project Description
 
@@ -17,6 +19,8 @@ This Repository is meant for the Operating System Course on making a Operating S
 Milestone 1 focuses on the GDT, Writing text to a framebuffer and booting sequence
 
 Milestone 2 focuses on interrupt, keyboard I/O, and Filesystem, the bonus included in Milestone 2 includes Infinite Directory entry for the filesystem, CMOS Time, and designing/implementing a filesystem other than the Filesystem FAT32 - IF2230 Edition
+
+Milestone 3 focuses on user mode and shell. Bonus included in this milestone include recursive cp and rm, relative pathing, and some creativity, for example simple memory management implementation (malloc, free, and realloc), time command, help command, simple text editor program, and snake minigame.
 
 ## Team Member
 | NIM      | Nama                       |
@@ -64,8 +68,8 @@ for inserting the shell, use `make insert-shell` command, this will insert a she
       │    stdmem.c
       │    string.c
       │
-      ├─── Filesystem
-      ├─── Interrupt
+      ├─── filesystem
+      ├─── interrupt
       ├─── lib-header
       └─── user
 
@@ -80,3 +84,11 @@ We use linked list directory table that contains directory entry. The directory 
 Each directory entry has dynamic length of name. The implementation is almost like this.
 
 <img src="./img/directory-entry.png" />
+
+## Snake Game
+
+You can play snake minigame by using command `snake` in shell.
+
+## Simple Text Editor (nano)
+
+You could create a new file and write its concent with command `nano filename`. It will show a nano-like text editor. To save the changes, simply type Ctrl + C. This is write only and does not support edit existing file.
