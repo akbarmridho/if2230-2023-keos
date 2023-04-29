@@ -605,13 +605,13 @@ uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint32_
     return 1u;
   }
 
-  struct BlockBuffer blocks;
+  uint32_t blocks[BLOCK_SIZE / 4u];
   read_blocks(&blocks, block, 1);
   uint32_t allocated = 0;
 
   for (uint32_t i = 0; i < BLOCK_SIZE && block_size > 0; i++)
   {
-    uint32_t new_allocated = load_blocks_rec(ptr, blocks.buf[i], block_size, size, depth - 1);
+    uint32_t new_allocated = load_blocks_rec(ptr, blocks[i], block_size, size, depth - 1);
     ptr += new_allocated * BLOCK_SIZE;
     block_size -= new_allocated;
     allocated += new_allocated;
