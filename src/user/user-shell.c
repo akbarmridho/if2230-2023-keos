@@ -616,6 +616,10 @@ int main()
     {
       help();
     }
+    else if (!strcmp(arg, "time", len))
+    {
+      time();
+    }
     else if (!strcmp(arg, "whereis", len))
     {
       char *filename = arg + len;

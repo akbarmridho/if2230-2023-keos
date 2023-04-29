@@ -120,3 +120,27 @@ void append_path(const char *stra, const char *strb, char *destination)
 
     destination[i] = '\0';
 }
+
+void itoa(int32_t value, char *result)
+{
+    char *ptr = result, *ptr1 = result, tmp_char;
+    int32_t tmp_value;
+
+    do
+    {
+        tmp_value = value;
+        value /= 10;
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + (tmp_value - value * 10)];
+    } while (value);
+
+    // Apply negative sign
+    if (tmp_value < 0)
+        *ptr++ = '-';
+    *ptr-- = '\0';
+    while (ptr1 < ptr)
+    {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+}

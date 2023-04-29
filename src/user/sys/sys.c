@@ -123,3 +123,9 @@ uint32_t get_timestamp(void)
   syscall(14, (uint32_t)&result, 0, 0);
   return result;
 }
+
+void read_rtc(uint16_t *year, uint16_t *month, uint16_t *day, uint16_t *hour, uint16_t *minute, uint16_t *second)
+{
+  uint16_t *array[] = {year, month, day, hour, minute, second};
+  syscall(16, (uint32_t)array, 0, 0);
+}

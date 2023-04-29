@@ -55,6 +55,13 @@ SECTIONS {
         ext2-api.o(.rodata*)
     }
 
+    .utils ALIGN(4):
+    {
+        utils.o(.text)
+        utils.o(.data)
+        utils.o(.rodata*)
+    }
+
     _linker_user_program_end = .;
     ASSERT ((_linker_user_program_end <= 1 * 1024 * 1024), "Error: User program linking result is more than 1 MiB")
 }

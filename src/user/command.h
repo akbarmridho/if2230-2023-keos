@@ -15,4 +15,6 @@ void cp(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
 
 void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst, uint8_t dst_len, char *extdst, uint32_t parent);
 
+void time();
+
 #endif

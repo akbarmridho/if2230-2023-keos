@@ -1,4 +1,5 @@
 #include "command.h"
+#include "../lib-header/string.h"
 #include "sys/sys.h"
 
 void command_input(char *buf, char *currentdir, uint32_t size)
@@ -194,4 +195,42 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
   {
     puts("Copy successful\n");
   }
+}
+
+void time()
+{
+  uint16_t year;
+  uint16_t month;
+  uint16_t day;
+  uint16_t hour;
+  uint16_t minute;
+  uint16_t second;
+  read_rtc(&year, &month, &day, &hour, &minute, &second);
+
+  char syear[10];
+  char smonth[10];
+  char sday[10];
+  char shour[10];
+  char sminute[10];
+  char ssecond[10];
+  itoa((int32_t)year, syear);
+  itoa((int32_t)month, smonth);
+  itoa((int32_t)day, sday);
+  itoa((int32_t)hour, shour);
+  itoa((int32_t)minute, sminute);
+  itoa((int32_t)second, ssecond);
+
+  puts(syear);
+  puts("-");
+  puts(smonth);
+  puts("-");
+  puts(sday);
+  puts(" ");
+  puts(shour);
+  puts(":");
+  puts(sminute);
+  puts(":");
+  puts(ssecond);
+
+  puts(" UTC\n");
 }
