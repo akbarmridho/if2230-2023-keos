@@ -37,6 +37,9 @@ struct KeyboardDriverState
     bool capslock;
     bool shift_left;
     bool shift_right;
+    bool ctrl;
+    bool text_mode;
+    bool aborted;
     uint8_t buffer_index;
     char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
 } __attribute((packed));
@@ -46,6 +49,9 @@ struct KeyboardDriverState
 // Activate keyboard ISR / start listen keyboard & save to buffer
 void keyboard_state_activate(void);
 
+// Make keyboard aborted on ctrl+c
+void keyboard_text_mode(void);
+
 // Deactivate keyboard ISR / stop listening keyboard interrupt
 void keyboard_state_deactivate(void);
 
@@ -54,6 +60,9 @@ void get_keyboard_buffer(char *buf);
 
 // Check whether keyboard ISR is active or not - @return Equal with keyboard_input_on value
 bool is_keyboard_blocking(void);
+
+// check if keyboard text mode is aborted
+bool is_keyboard_aborted(void);
 
 /* -- Keyboard Interrupt Service Routine -- */
 

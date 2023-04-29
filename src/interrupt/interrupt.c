@@ -5,6 +5,7 @@
 #include "../filesystem/ext2.h"
 #include "../lib-header/stdmem.h"
 #include "../lib-header/memory.h"
+#include "../lib-header/string.h"
 #include "./idt.h"
 
 struct TSSEntry _interrupt_tss_entry = {
@@ -92,6 +93,38 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         break;
     case 8:
         *((bool *)cpu.ebx) = free((void *)cpu.ecx);
+        break;
+    case 9:
+        // get text
+        __asm__("sti"); // Due IRQ is disabled when main_interrupt_handler() called
+        uint32_t allocated = 0;
+        bool finished = FALSE;
+        do
+        {
+            keyboard_state_activate();
+            keyboard_text_mode();
+            while (is_keyboard_blocking())
+                ;
+            // available buffer size left
+            uint32_t available_space = cpu.ecx - allocated;
+            if (available_space >= KEYBOARD_BUFFER_SIZE)
+            {
+                get_keyboard_buffer((char *)cpu.ebx + allocated);
+                allocated += strlen((char *)cpu.ebx + allocated);
+            }
+            else
+            {
+                get_keyboard_buffer(buf);
+                allocated += strlen(buf);
+                memcpy((char *)cpu.ebx + allocated, buf, available_space);
+            }
+            // abort is keyboard aborted or space not available
+            finished = is_keyboard_aborted() || available_space <= KEYBOARD_BUFFER_SIZE;
+        } while (!finished);
+        *((uint32_t *)cpu.edx) = allocated + 1;
+        break;
+    case 10:
+        clear_screen();
         break;
     default:
         break;

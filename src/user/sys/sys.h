@@ -21,4 +21,8 @@ void *malloc(uint32_t size);
 
 bool free(void *ptr);
 
+void get_text(char *buf, uint32_t size, uint32_t *result_size);
+
+void clear_screen(void);
+
 #endif

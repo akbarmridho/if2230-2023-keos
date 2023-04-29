@@ -274,10 +274,47 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
     }
 }
 
-int main(void)
+void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
+{
+    request->name = filename;
+    request->inode = currentdirnode;
+    request->buffer_size = 0;
+    request->name_len = name_len;
+    request->inode_only = FALSE;
+
+    int8_t retval = sys_read(request);
+    if (retval == 0 || retval == 2)
+    {
+        puts("file already exists. nano is write only\n");
+        return;
+    }
+    uint32_t filesize;
+    clear_screen();
+    get_text(request->buf, BLOCK_SIZE * BLOCK_COUNT, &filesize);
+    request->buffer_size = filesize;
+    retval = sys_write(request);
+    puts("\n");
+    if (retval == 0)
+    {
+        puts(filename);
+        if (request->ext[0] != '\0')
+        {
+            puts(".");
+            puts(request->ext);
+        }
+        puts(" successfully written\n");
+    }
+    else
+    {
+        puts("failed to write file\n");
+    }
+}
+
+int main()
 {
     struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
-    struct BlockBuffer buffer[BLOCK_COUNT];
+    struct BlockBuffer *buffer = malloc(BLOCK_SIZE * BLOCK_COUNT);
+    request->buf = buffer;
     // struct EXT2DriverRequest request = {
     //     .buf = &buffer,
     //     .name = "ikanaide",
@@ -424,6 +461,29 @@ int main(void)
             }
             request->buf = buffer;
             cat(request, filename, name_len);
+        }
+        else if (!strcmp(arg, "nano", len))
+        {
+            char *filename = arg + len;
+            uint8_t name_len;
+            next_arg(&filename, &name_len);
+            if (name_len == 0)
+            {
+                puts("missing filename arg\n");
+                continue;
+            }
+            uint8_t sep_retval;
+            sep_retval = separate_filename_extension(&filename, &name_len, &request->ext);
+            if (sep_retval != 0)
+            {
+                puts("invalid filename\n");
+                continue;
+            }
+            nano(request, filename, name_len);
+        }
+        else if (!strcmp(arg, "clear", len))
+        {
+            clear_screen();
         }
     }
 

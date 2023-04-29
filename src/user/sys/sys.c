@@ -80,3 +80,13 @@ bool free(void *ptr)
 
   return retval;
 }
+
+void get_text(char *buf, uint32_t size, uint32_t *result_size)
+{
+  syscall(9, (uint32_t)buf, size, (uint32_t)result_size);
+}
+
+void clear_screen(void)
+{
+  syscall(10, 0, 0, 0);
+}

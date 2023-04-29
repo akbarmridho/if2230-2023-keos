@@ -59,6 +59,7 @@ void clear_screen(void)
     framebuffer_clear();
     framebuffer_state.row = 0;
     framebuffer_state.col = 0;
+    framebuffer_set_cursor(0, 0);
 }
 
 void scroll_up()

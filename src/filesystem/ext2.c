@@ -577,7 +577,7 @@ uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint32_
 
   for (uint32_t i = 0; i < BLOCK_SIZE && block_size > 0; i++)
   {
-    uint32_t new_allocated = load_blocks_rec(ptr, blocks.buf[i], size, block_size, depth - 1);
+    uint32_t new_allocated = load_blocks_rec(ptr, blocks.buf[i], block_size, size, depth - 1);
     ptr += new_allocated * BLOCK_SIZE;
     block_size -= new_allocated;
     allocated += new_allocated;

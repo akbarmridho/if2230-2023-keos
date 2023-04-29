@@ -286,7 +286,13 @@ void keyboard_state_activate(void)
 {
     memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
     keyboard_state.buffer_index = 0;
+    keyboard_state.text_mode = FALSE;
     keyboard_state.keyboard_input_on = TRUE;
+    keyboard_state.shift_left = FALSE;
+    keyboard_state.shift_right = FALSE;
+    keyboard_state.capslock = FALSE;
+    keyboard_state.ctrl = FALSE;
+    keyboard_state.aborted = FALSE;
     framebuffer_state.start_col = framebuffer_state.col;
     framebuffer_state.start_row = framebuffer_state.row;
 }
@@ -295,6 +301,11 @@ void keyboard_state_activate(void)
 void keyboard_state_deactivate(void)
 {
     keyboard_state.keyboard_input_on = FALSE;
+}
+
+void keyboard_text_mode(void)
+{
+    keyboard_state.text_mode = TRUE;
 }
 
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
@@ -307,6 +318,11 @@ void get_keyboard_buffer(char *buf)
 bool is_keyboard_blocking(void)
 {
     return keyboard_state.keyboard_input_on;
+}
+
+bool is_keyboard_aborted(void)
+{
+    return keyboard_state.aborted;
 }
 
 /* -- Keyboard Interrupt Service Routine -- */
@@ -359,6 +375,12 @@ void keyboard_isr(void)
         case 0xb6:
             keyboard_state.shift_right = FALSE;
             break;
+        case 0x1d:
+            keyboard_state.ctrl = TRUE;
+            break;
+        case 0x9d:
+            keyboard_state.ctrl = FALSE;
+            break;
         case 0x4b:
             // left arrow
             if (get_current_buffer_index() == 0)
@@ -395,7 +417,13 @@ void keyboard_isr(void)
             return;
         }
         uint8_t current_buffer_index = get_current_buffer_index();
-        if (mapped_char == '\b')
+        if (keyboard_state.text_mode && keyboard_state.ctrl && (mapped_char == 'c' || mapped_char == 'C'))
+        {
+            // abort text mode
+            keyboard_state.aborted = TRUE;
+            keyboard_state_deactivate();
+        }
+        else if (mapped_char == '\b')
         {
             // backspace
             if (current_buffer_index > 0)
@@ -434,6 +462,11 @@ void keyboard_isr(void)
         }
         else if (mapped_char == '\n')
         {
+            if (keyboard_state.text_mode)
+            {
+                // add newline if text mode
+                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = '\n';
+            }
             puts(&mapped_char, 1, 0xF);
             keyboard_state_deactivate();
         }
