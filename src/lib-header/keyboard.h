@@ -3,6 +3,7 @@
 
 #include "../interrupt/interrupt.h"
 #include "stdtype.h"
+#include "event.h"
 
 #define EXT_SCANCODE_UP 0x48
 #define EXT_SCANCODE_DOWN 0x50
@@ -57,6 +58,10 @@ void keyboard_state_deactivate(void);
 
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
 void get_keyboard_buffer(char *buf);
+
+void get_keyboard_events(struct KeyboardEvents *buf);
+
+void reset_events(void);
 
 // Check whether keyboard ISR is active or not - @return Equal with keyboard_input_on value
 bool is_keyboard_blocking(void);

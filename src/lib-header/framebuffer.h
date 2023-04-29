@@ -47,6 +47,8 @@ void framebuffer_write(uint8_t row, uint8_t col, char c, uint8_t fg, uint8_t bg)
  */
 void framebuffer_set_cursor(uint8_t r, uint8_t c);
 
+void disable_cursor();
+
 /**
  * Set all cell in framebuffer character to 0x00 (empty character)
  * and color to 0x07 (gray character & black background)

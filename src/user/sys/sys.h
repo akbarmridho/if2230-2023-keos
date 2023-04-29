@@ -2,6 +2,7 @@
 #define SYS_H
 #include "../../lib-header/stdtype.h"
 #include "../../filesystem/ext2-api.h"
+#include "../../lib-header/event.h"
 
 void puts_color(const char *str, uint8_t color);
 void puts(const char *str);
@@ -24,5 +25,9 @@ bool free(void *ptr);
 void get_text(char *buf, uint32_t size, uint32_t *result_size);
 
 void clear_screen(void);
+
+void get_keyboard_events(struct KeyboardEvents *events);
+
+void reset_keyboard_events(void);
 
 #endif

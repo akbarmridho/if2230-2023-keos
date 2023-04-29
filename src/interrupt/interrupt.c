@@ -126,6 +126,12 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     case 10:
         clear_screen();
         break;
+    case 11:
+        get_keyboard_events((struct KeyboardEvents *)cpu.ebx);
+        break;
+    case 12:
+        reset_events();
+        break;
     default:
         break;
     }

@@ -278,6 +278,7 @@ char shift_map[] = {
 };
 
 static struct KeyboardDriverState keyboard_state;
+static struct KeyboardEvents events;
 
 /* -- Driver Interfaces -- */
 
@@ -295,12 +296,14 @@ void keyboard_state_activate(void)
     keyboard_state.aborted = FALSE;
     framebuffer_state.start_col = framebuffer_state.col;
     framebuffer_state.start_row = framebuffer_state.row;
+    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }
 
 // Deactivate keyboard ISR / stop listening keyboard interrupt
 void keyboard_state_deactivate(void)
 {
     keyboard_state.keyboard_input_on = FALSE;
+    disable_cursor();
 }
 
 void keyboard_text_mode(void)
@@ -312,6 +315,16 @@ void keyboard_text_mode(void)
 void get_keyboard_buffer(char *buf)
 {
     memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);
+}
+
+void get_keyboard_events(struct KeyboardEvents *buf)
+{
+    memcpy(buf, &events, sizeof(struct KeyboardEvents));
+}
+
+void reset_events(void)
+{
+    memset(events.scancodes, FALSE, sizeof(struct KeyboardEvents));
 }
 
 // Check whether keyboard ISR is active or not - @return Equal with keyboard_input_on value
@@ -351,12 +364,13 @@ uint8_t get_current_buffer_index()
 
 void keyboard_isr(void)
 {
+    uint8_t scancode = in(KEYBOARD_DATA_PORT);
+    events.scancodes[scancode] = TRUE;
+
     if (!keyboard_state.keyboard_input_on)
         keyboard_state.buffer_index = 0;
     else
     {
-        uint8_t scancode = in(KEYBOARD_DATA_PORT);
-
         // handle capslock and shift
         switch (scancode)
         {

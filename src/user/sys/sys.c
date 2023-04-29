@@ -90,3 +90,13 @@ void clear_screen(void)
 {
   syscall(10, 0, 0, 0);
 }
+
+void get_keyboard_events(struct KeyboardEvents *events)
+{
+  syscall(11, (uint32_t)events, 0, 0);
+}
+
+void reset_keyboard_events(void)
+{
+  syscall(12, 0, 0, 0);
+}
