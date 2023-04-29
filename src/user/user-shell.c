@@ -749,6 +749,45 @@ int main()
         puts("File/ folder not exist\n");
       }
     }
+    else if (!strcmp(arg, "rm", len))
+    {
+      char *flag = arg + len;
+      uint8_t flag_len;
+      next_arg(&flag, &flag_len);
+      if (strcmp(flag, "-r", flag_len) != 0)
+      {
+        char *src = flag;
+        uint8_t src_len = flag_len;
+        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
+        {
+          continue;
+        }
+        if (src_len == 0)
+        {
+          puts("Missing source file\n");
+        }
+
+        request->inode = currentdirnode;
+        rm(request, src, src_len, currentdirnode);
+      }
+      else
+      {
+        char *src = flag + flag_len + 1;
+        uint8_t src_len;
+        next_arg(&src, &src_len);
+        if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
+        {
+          continue;
+        }
+        if (src_len == 0)
+        {
+          puts("Missing source file\n");
+        }
+
+        request->inode = currentdirnode;
+        rmr(request, src, src_len, currentdirnode);
+      }
+    }
   }
 
   return 0;

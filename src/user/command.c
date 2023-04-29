@@ -271,3 +271,174 @@ void help()
   puts("time                  show current time\n");
   puts("whereis name          find file/ folder with given name\n");
 }
+
+void rm(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t parent)
+{
+  request->name = src;
+  request->name_len = src_len;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
+  int8_t readretval = sys_read(request);
+  if (readretval != 0)
+  {
+    // puts("Not a file\n");
+    readretval = sys_read_directory(request);
+    if (readretval != 0)
+    {
+      puts("Fail to read folder\n");
+      return;
+    }
+    else
+    {
+      uint32_t offset = get_directory_first_child_offset(request->buf);
+      struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+      if (entry->inode != 0)
+      {
+        // Folder is not empty
+        puts("Folder is not empty, did not specify -r (usage: rm -r {src})\n");
+        return;
+      }
+      else
+      {
+        request->inode = parent;
+        request->is_dir = TRUE;
+        int8_t delfolderretval = sys_delete(request);
+        if (delfolderretval == 0)
+        {
+          puts("Delete folder successful\n");
+          return;
+        }
+        else
+        {
+          puts("Fail to delete folder\n");
+          return;
+        }
+      }
+    }
+  }
+
+  request->inode = parent;
+  int8_t delretval = sys_delete(request);
+  if (delretval != 0)
+  {
+    puts("Fail to delete file\n");
+    return;
+  }
+  else
+  {
+    puts("Delete successful\n");
+  }
+}
+
+void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t parent)
+{
+  request->inode = parent;
+  request->name = src;
+  request->name_len = src_len;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
+  int8_t readretval = sys_read(request);
+  if (readretval != 0)
+  {
+    // puts("Not a file\n");
+    request->name = src;
+    request->name_len = src_len;
+    request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+    request->inode_only = FALSE;
+    readretval = sys_read_directory(request);
+    if (readretval != 0)
+    {
+      puts("Fail to read folder\n");
+    }
+    else
+    {
+      uint32_t offset = get_directory_first_child_offset(request->buf);
+      struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+      // request->inode = parent;
+      request->buffer_size = 0;
+      request->is_dir = TRUE;
+      while (entry->inode != 0)
+      {
+        // Folder is not empty, iterate every entry in the folder
+        // if (init == 0)
+        // {
+        //   // request->name_len = dst_len;
+        //   request->buffer_size = 0;
+        //   int8_t writeretval = sys_write(request);
+        //   if (writeretval != 0)
+        //   {
+        //     puts("Fail to write folder\n");
+        //     return;
+        //   }
+        //   else
+        //   {
+        //     puts("Write folder successful\n");
+        //   }
+        //   init++;
+        //   // Request berisi folder parent dst yang baru dibuat
+        // }
+
+        // Recursive call
+        // Block habis, lanjut block berikutnya
+        if (entry->file_type == EXT2_FT_NEXT)
+        {
+          request->inode = entry->inode;
+          sys_read_next_directory(request);
+          offset = 0;
+          entry = get_directory_entry(request->buf, offset);
+          continue;
+        }
+        if (entry->file_type == EXT2_FT_REG_FILE)
+        {
+          char *filename = get_entry_name(entry);
+          uint8_t name_len = entry->name_len;
+          struct EXT2DriverRequest *newReq = malloc(sizeof(struct EXT2DriverRequest));
+          struct BlockBuffer *buffer = malloc(sizeof(struct BlockBuffer) * BLOCK_COUNT);
+          newReq->buf = buffer;
+          newReq->buffer_size = BLOCK_COUNT * BLOCK_SIZE;
+          newReq->inode_only = FALSE;
+          newReq->inode = request->inode;
+          newReq->name = filename;
+          newReq->name_len = name_len;
+
+          rm(newReq, filename, name_len, request->inode);
+          free(buffer);
+          free(newReq);
+        }
+        else
+        {
+          char *foldername = get_entry_name(entry);
+          uint8_t name_len = entry->name_len;
+          // explore folder berikutnya
+          struct EXT2DriverRequest *newReq = malloc(sizeof(struct EXT2DriverRequest));
+          struct BlockBuffer *buffer = malloc(sizeof(struct BlockBuffer) * BLOCK_COUNT);
+          newReq->buf = buffer;
+          newReq->buffer_size = BLOCK_COUNT * BLOCK_SIZE;
+          newReq->inode_only = FALSE;
+          newReq->inode = request->inode;
+          newReq->name = foldername;
+          newReq->name_len = name_len;
+
+          rmr(newReq, foldername, name_len, request->inode);
+          free(buffer);
+          free(newReq);
+        }
+        offset += entry->rec_len;
+        entry = get_directory_entry(request->buf, offset);
+      }
+    }
+  }
+
+  request->inode = parent;
+
+  int8_t delretval = sys_delete(request);
+  if (delretval != 0)
+  {
+    puts("Fail to delete file/folder\n");
+    return;
+  }
+  else
+  {
+    puts("Delete successful\n");
+  }
+}

@@ -18,4 +18,7 @@ void time();
 
 void help();
 
+void rm(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t parent);
+void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t parent);
+
 #endif
