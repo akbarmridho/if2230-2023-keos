@@ -181,7 +181,7 @@ int8_t read_next_directory_table(struct EXT2DriverRequest request);
  * @param All attribute will be used for write except is_dir, buffer_size == 0 then create a folder / directory. It is possible that exist file with name same as a folder
  * @return Error code: 0 success - 1 file/folder already exist - 2 invalid parent folder - -1 unknown
  */
-int8_t write(struct EXT2DriverRequest request);
+int8_t write(struct EXT2DriverRequest *request);
 
 /**
  * @brief EXT2 delete, delete a file or empty directory in file system

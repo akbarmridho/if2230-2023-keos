@@ -26,7 +26,7 @@ void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 void initialize_filesystem_ext2(void);
 int8_t read(struct EXT2DriverRequest request);
 int8_t read_directory(struct EXT2DriverRequest *request);
-int8_t write(struct EXT2DriverRequest request);
+int8_t write(struct EXT2DriverRequest *request);
 int8_t delete(struct EXT2DriverRequest request);
 int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ext)[4]);
 
@@ -105,11 +105,11 @@ int main(int argc, char *argv[])
     sscanf(argv[2], "%u", &request.inode);
     sscanf(argv[1], "%8s", request.name);
 
-    int retcode = write(request);
+    int retcode = write(&request);
     if (retcode == 1 && is_replace)
     {
         retcode = delete (request);
-        retcode = write(request);
+        retcode = write(&request);
     }
     if (retcode == 0)
         puts("Write success");

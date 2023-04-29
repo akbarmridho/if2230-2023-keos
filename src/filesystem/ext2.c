@@ -811,16 +811,16 @@ int8_t read_next_directory_table(struct EXT2DriverRequest request)
   return 0;
 }
 
-int8_t write(struct EXT2DriverRequest request)
+int8_t write(struct EXT2DriverRequest *request)
 {
-  int8_t retval = resolve_path(&request);
+  int8_t retval = resolve_path(request);
   if (retval != 0)
     // invalid parent folder
     return 2;
-  uint32_t bgd = inode_to_bgd(request.inode);
-  uint32_t local_idx = inode_to_local(request.inode);
+  uint32_t bgd = inode_to_bgd(request->inode);
+  uint32_t local_idx = inode_to_local(request->inode);
 
-  // get node corresponding to request.inode
+  // get node corresponding to request->inode
   read_blocks(&inode_table_buf, bgd_table.table[bgd].inode_table, INODES_TABLE_BLOCK_COUNT);
 
   struct EXT2INode *node = &inode_table_buf.table[local_idx];
@@ -841,7 +841,7 @@ int8_t write(struct EXT2DriverRequest request)
   uint32_t offset = get_directory_first_child_offset(&block);
   struct EXT2DirectoryEntry *entry = get_directory_entry(&block, offset);
 
-  uint16_t space_needed = get_directory_record_length(request.name_len);
+  uint16_t space_needed = get_directory_record_length(request->name_len);
 
   // need space for last item to be pointer to next directory table, so maximum space in block will be this
   uint16_t space_total = BLOCK_SIZE - get_directory_record_length(0);
@@ -862,7 +862,7 @@ int8_t write(struct EXT2DriverRequest request)
     }
     if (entry->inode != 0)
     {
-      if (is_directory_entry_same(entry, request, request.buffer_size != 0))
+      if (is_directory_entry_same(entry, *request, request->buffer_size != 0))
       {
         // folder / file already exist
         return 1;
@@ -913,35 +913,36 @@ int8_t write(struct EXT2DriverRequest request)
   struct EXT2INode new_node;
   uint32_t new_inode = allocate_node();
   entry->inode = new_inode;
+  request->inode = new_inode;
   // + 1 to also store null terminator if exist
-  memcpy(get_entry_name(entry), request.name, request.name_len + 1);
-  entry->name_len = request.name_len;
+  memcpy(get_entry_name(entry), request->name, request->name_len + 1);
+  entry->name_len = request->name_len;
   entry->rec_len = get_directory_record_length(entry->name_len);
 
   // shift linked list terminator
   get_next_directory_entry(entry)->inode = 0;
 
-  if (request.buffer_size == 0)
+  if (request->buffer_size == 0)
   {
     // create folder
     entry->file_type = EXT2_FT_DIR;
-    init_directory_table(&new_node, new_inode, request.inode);
+    init_directory_table(&new_node, new_inode, request->inode);
   }
   else
   {
     entry->file_type = EXT2_FT_REG_FILE;
-    memcpy(entry->ext, request.ext, 3);
+    memcpy(entry->ext, request->ext, 3);
     new_node.mode = EXT2_S_IFREG;
-    new_node.size_low = request.buffer_size;
+    new_node.size_low = request->buffer_size;
     new_node.size_high = 0;
 
     // CMOS
     new_node.mtime = new_node.ctime = new_node.atime = get_timestamp();
     new_node.dtime = 0;
 
-    new_node.blocks = divceil(request.buffer_size, BLOCK_SIZE);
+    new_node.blocks = divceil(request->buffer_size, BLOCK_SIZE);
 
-    allocate_node_blocks(request.buf, &new_node, inode_to_bgd(new_inode));
+    allocate_node_blocks(request->buf, &new_node, inode_to_bgd(new_inode));
     sync_node(&new_node, new_inode);
   }
 

@@ -72,7 +72,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         *((int8_t *)cpu.ecx) = read_next_directory_table(*(struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 3:
-        *((int8_t *)cpu.ecx) = write(*(struct EXT2DriverRequest *)cpu.ebx);
+        *((int8_t *)cpu.ecx) = write((struct EXT2DriverRequest *)cpu.ebx);
         break;
     case 4:
         *((int8_t *)cpu.ecx) = delete (*(struct EXT2DriverRequest *)cpu.ebx);
@@ -138,6 +138,19 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
         break;
     case 14:
         *((bool *)cpu.ebx) = get_timestamp();
+    case 15:
+        uint8_t *chars = (uint8_t *)cpu.ebx;
+        uint8_t *fgs = (uint8_t *)cpu.ecx;
+        uint8_t *bgs = (uint8_t *)cpu.edx;
+        for (uint32_t i = 0; i < ROW; i++)
+        {
+            for (uint32_t j = 0; j < COLUMN; j++)
+            {
+                uint32_t pos = i * COLUMN + j;
+                framebuffer_write(i, j, chars[pos], fgs[pos], bgs[pos]);
+            }
+        }
+        break;
     default:
         break;
     }
