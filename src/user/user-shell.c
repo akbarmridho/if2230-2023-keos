@@ -39,6 +39,9 @@ int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t old
   request->name = newname;
   request->name_len = newname_len;
   strcpy(new_ext, request->ext);
+  request->inode = currentdirnode;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
   int8_t retval2 = sys_write(request);
   if (retval2 != 0)
   {
@@ -49,9 +52,17 @@ int8_t rename_file(struct EXT2DriverRequest *request, char *oldname, uint8_t old
   request->name = oldname;
   request->name_len = oldname_len;
   strcpy(old_ext, request->ext);
+  request->inode = currentdirnode;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
   retval = sys_delete(request);
   if (retval != 0)
   {
+    char ret[2];
+    ret[0] = retval + '0';
+    ret[1] = '\0';
+    puts("\nretval: ");
+    puts(ret);
     // failed to delete old file
     return 3;
   }
@@ -122,6 +133,79 @@ void resolve_new_path(char *dirname, uint8_t name_len)
     return;
   dirname += len + 1;
   resolve_new_path(dirname, name_len - len);
+}
+/*
+Move file to a folder
+I.S. filename any, dirname is a valid folder in current directory
+F.S. filename is valid and moved to dirname
+Return value:
+  0: success
+  1: file to be moved not found
+  2: file with new name already exist
+  3: parent folder invalid
+  4: unknown error
+  5: failed to delete old file
+*/
+int8_t move_file_to_folder(struct EXT2DriverRequest *request, char *filename, uint8_t name_len, char *ext, char *dirname, uint8_t dirname_len)
+{
+  // get directory inode
+  request->name = dirname;
+  request->name_len = dirname_len;
+  request->inode_only = TRUE;
+  int8_t retval = sys_read_directory(request);
+
+  // get directory inode
+  uint32_t dir_inode = request->inode;
+
+  // get file to buffer
+  request->name = filename;
+  request->name_len = name_len;
+  strcpy(ext, request->ext);
+  request->inode = currentdirnode;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
+  retval = sys_read(request);
+  if (retval != 0)
+  {
+    // file to be moved not found
+    return 1;
+  }
+
+  // write file to new directory
+  request->inode = dir_inode;
+  retval = sys_write(request);
+  if (retval != 0)
+  {
+    switch (retval)
+    {
+    case 1:
+      // file with name filename already exist within directory dirname
+      return 2;
+
+    case 2:
+      // parent folder invalid
+      return 3;
+
+    default:
+      // unknown error
+      return 4;
+    }
+  }
+
+  // delete old file
+  request->name = filename;
+  request->name_len = name_len;
+  strcpy(ext, request->ext);
+  request->inode = currentdirnode;
+  request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+  request->inode_only = FALSE;
+  retval = sys_delete(request);
+  if (retval != 0)
+  {
+    // failed to delete old file
+    return 5;
+  }
+  return 0;
 }
 
 void ls(struct EXT2DriverRequest *request, char *dirname, uint8_t name_len)
@@ -208,7 +292,7 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
     {
       // dst not a directory
       char dst_ext[4];
-      separate_filename_extension(&src, &src_len, &dst_ext);
+      separate_filename_extension(&dst, &dst_len, &dst_ext);
       int8_t rename_retval = rename_file(request, src, src_len, src_ext, dst, dst_len, dst_ext);
       switch (rename_retval)
       {
@@ -217,7 +301,7 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
           puts("Rename successful\n");
           return;
         case 1:
-          puts("Fail to be renamed not found\n");
+          puts("File to be renamed not found\n");
           return;
         case 2:
           puts("File already exists\n");
@@ -234,6 +318,31 @@ void mv(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *dst
     }
     else
     {
+      // dst a valid directory
+      int8_t move_retval = move_file_to_folder(request, src, src_len, src_ext, dst, dst_len);
+      switch (move_retval)
+      {
+        {
+        case 0:
+          puts("Move successful\n");
+          return;
+        case 1:
+          puts("File to be moved not found\n");
+          return;
+        case 2:
+          puts("File already exists\n");
+          return;
+        case 3:
+          puts("Parent folder not found\n");
+          return;
+        case 4:
+          puts("Fail to delete old file\n");
+          return;
+        default:
+          puts("Unknown error\n");
+          return;
+        }
+      }
     }
   }
 }

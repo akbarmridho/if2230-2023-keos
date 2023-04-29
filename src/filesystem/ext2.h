@@ -186,7 +186,7 @@ int8_t write(struct EXT2DriverRequest *request);
 /**
  * @brief EXT2 delete, delete a file or empty directory in file system
  *  @param request buf and buffer_size is unused, is_dir == true means delete folder (possible file with name same as folder)
- * @return Error code: 0 success - 1 not found - 2 folder is not empty - -1 unknown
+ * @return Error code: 0 success - 1 not found - 2 folder is not empty - 3 parent folder invalid -1 unknown
  */
 int8_t delete(struct EXT2DriverRequest request);
 
