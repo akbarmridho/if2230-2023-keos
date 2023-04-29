@@ -15,6 +15,8 @@ int8_t sys_read_directory(struct EXT2DriverRequest *request);
 
 int8_t sys_write(struct EXT2DriverRequest *request);
 
+int8_t sys_delete(struct EXT2DriverRequest *request);
+
 int8_t sys_read_next_directory(struct EXT2DriverRequest *request);
 
 void *malloc(uint32_t size);

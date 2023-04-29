@@ -49,6 +49,13 @@ int8_t sys_write(struct EXT2DriverRequest *request)
   return ret;
 }
 
+int8_t sys_delete(struct EXT2DriverRequest *request)
+{
+  uint32_t ret;
+  syscall(4, (uint32_t)request, (uint32_t)&ret, 0);
+  return ret;
+}
+
 int8_t sys_read_directory(struct EXT2DriverRequest *request)
 {
   uint32_t ret;
