@@ -20,6 +20,8 @@ int8_t sys_read_next_directory(struct EXT2DriverRequest *request);
 
 void *malloc(uint32_t size);
 
+void *realloc(void *ptr, uint32_t size);
+
 bool free(void *ptr);
 
 void get_text(char *buf, uint32_t size, uint32_t *result_size);

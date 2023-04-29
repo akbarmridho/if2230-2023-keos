@@ -72,6 +72,15 @@ void *malloc(uint32_t size)
   return (void *)retval;
 }
 
+void *realloc(void *ptr, uint32_t size)
+{
+  uint32_t retval;
+
+  syscall(13, (uint32_t)&retval, (uint32_t)ptr, size);
+
+  return (void *)retval;
+}
+
 bool free(void *ptr)
 {
   bool retval;

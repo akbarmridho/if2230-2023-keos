@@ -132,6 +132,9 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     case 12:
         reset_events();
         break;
+    case 13:
+        *((uint32_t *)cpu.ebx) = realloc((void *)cpu.ecx, cpu.edx);
+        break;
     default:
         break;
     }

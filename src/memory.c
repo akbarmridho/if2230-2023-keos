@@ -1,4 +1,5 @@
 #include "lib-header/memory.h"
+#include "lib-header/stdmem.h"
 
 void initialize_memory()
 {
@@ -72,12 +73,34 @@ bool free(void *ptr)
 
     // cek berikutnya dan gabung bila ada yang kosong
     struct allocator *next = entry + sizeof(struct allocator) + entry->size;
-
     while (!next->is_allocated && next->size != 0 && ((uint32_t)next < HEAP_START_ADDRESS + PAGE_FRAME_SIZE))
     {
         entry->size += next->size + sizeof(struct allocator);
         next = next + sizeof(struct allocator) + next->size;
     }
 
+    // Known internal fragmentation:
+    // kasus ketika terdapat alokasi memory A - B - C dan kita melakukan free pada C sedangkan B merupakan
+    // blok memori kosong. Seharusnya, B dan C digabung, tetapi pada implementasi ini belum ditangani
+
     return TRUE;
+}
+
+uint32_t realloc(void *ptr, uint32_t size)
+{
+    uint32_t newptr = malloc(size);
+
+    if (newptr == 0) // failed to malloc
+    {
+        return 0;
+    }
+
+    memcpy((void *)newptr, (void *)ptr, size);
+
+    if (free((void *)ptr) == FALSE) // failed to free
+    {
+        return 0;
+    }
+
+    return newptr;
 }
