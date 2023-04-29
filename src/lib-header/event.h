@@ -5,6 +5,6 @@
 struct KeyboardEvents
 {
   bool scancodes[256];
-};
+} __attribute((packed));
 
 #endif

@@ -2,6 +2,7 @@
 #include "../user/sys/sys.h"
 #include "../lib-header/string.h"
 #include "../lib-header/math.h"
+#include "snake/snake.h"
 #include "command.h"
 
 #define BLOCK_COUNT 16
@@ -748,6 +749,10 @@ int main()
       {
         puts("File/ folder not exist\n");
       }
+    }
+    else if (!strcmp(arg, "snake", len))
+    {
+      start_snake();
     }
   }
 

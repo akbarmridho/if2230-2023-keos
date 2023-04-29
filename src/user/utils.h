@@ -9,3 +9,5 @@ void waitsecond();
 void waitbusy();
 
 int32_t rand(int32_t low, int32_t high);
+
+void srand(uint32_t seed);

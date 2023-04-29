@@ -33,6 +33,7 @@ int8_t separate_filename_extension(char **filename, uint8_t *len_name, char (*ex
 // Global variable
 uint8_t *image_storage;
 uint8_t *file_buffer;
+uint8_t *read_buffer;
 
 void read_blocks(void *ptr, uint32_t logical_block_address, uint8_t block_count)
 {
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
     // Read storage into memory, requiring 4 MB memory
     image_storage = malloc(4 * 1024 * 1024);
     file_buffer = malloc(4 * 1024 * 1024);
+    read_buffer = malloc(4 * 1024 * 1024);
     FILE *fptr = fopen(argv[3], "r");
     fread(image_storage, 4 * 1024 * 1024, 1, fptr);
     fclose(fptr);
@@ -91,6 +93,7 @@ int main(int argc, char *argv[])
     initialize_filesystem_ext2();
     char *name = argv[1];
     struct EXT2DriverRequest request;
+    struct EXT2DriverRequest reqread;
     int8_t retval = separate_filename_extension(&name, &filename_length, &request.ext);
     printf("Filename       : %s\n", name);
     printf("Filename length: %d\n", filename_length);
@@ -101,11 +104,31 @@ int main(int argc, char *argv[])
     request.name = name;
     request.name_len = filename_length;
     request.is_dir = FALSE;
-
     sscanf(argv[2], "%u", &request.inode);
-    sscanf(argv[1], "%8s", request.name);
+    sscanf(argv[1], "%s", request.name);
 
-    int retcode = write(&request);
+    reqread = request;
+    reqread.buf = read_buffer;
+    int retcode = read(reqread);
+    if (retcode == 0)
+    {
+        bool same = TRUE;
+        for (uint32_t i = 0; i < filesize; i++)
+        {
+            if (read_buffer[i] != file_buffer[i])
+            {
+                printf("not same\n");
+                same = FALSE;
+                break;
+            }
+        }
+        if (same)
+        {
+            printf("same\n");
+        }
+    }
+
+    retcode = write(&request);
     if (retcode == 1 && is_replace)
     {
         retcode = delete (request);

@@ -36,6 +36,8 @@ void reset_keyboard_events(void);
 
 uint32_t get_timestamp(void);
 
+void rewrite_framebuffer(char *chars, uint8_t *fgs, uint8_t *bgs);
+
 void read_rtc(uint16_t *year, uint16_t *month, uint16_t *day, uint16_t *hour, uint16_t *minute, uint16_t *second);
 
 #endif

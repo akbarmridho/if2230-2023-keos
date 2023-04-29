@@ -144,6 +144,7 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     *((bool *)cpu.ebx) = get_timestamp();
     break;
   case 15:
+    disable_cursor();
     chars = (char *)cpu.ebx;
     fgs = (uint8_t *)cpu.ecx;
     bgs = (uint8_t *)cpu.edx;
