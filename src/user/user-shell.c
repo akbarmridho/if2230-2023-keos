@@ -407,7 +407,7 @@ void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
   }
 }
 
-void whereis(struct EXT2DriverRequest *request, char *targetname, char targetext[4], char *current_path)
+void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetname, char targetext[4], char *current_path, bool *found)
 {
   int8_t retval = sys_read_directory(request);
   if (retval != 0)
@@ -453,6 +453,8 @@ void whereis(struct EXT2DriverRequest *request, char *targetname, char targetext
           puts(result);
           puts("\n");
         }
+
+        *found = TRUE;
       }
     }
     else
@@ -461,12 +463,14 @@ void whereis(struct EXT2DriverRequest *request, char *targetname, char targetext
       // panggil whereis juga
       char *foldername = get_entry_name(entry);
 
-      if (strlen(targetext) == 0 && is_equal(foldername, targetname))
+      if ((strlen(targetext) == 0 && is_equal(foldername, targetname)) || (is_equal(foldername, targetdir)))
       {
         char result[strlen(foldername) + strlen(current_path) + 2];
         append_path(current_path, foldername, result);
         puts(result);
         puts("\n");
+
+        *found = TRUE;
       }
 
       // explore folder berikutnya
@@ -481,7 +485,7 @@ void whereis(struct EXT2DriverRequest *request, char *targetname, char targetext
 
       char *new_current_path = malloc(strlen(current_path) + strlen(foldername) + 2);
       append_path(current_path, foldername, new_current_path);
-      whereis(newReq, targetname, targetext, new_current_path);
+      whereis(newReq, targetdir, targetname, targetext, new_current_path, found);
 
       free(new_current_path);
       free(buffer);
@@ -730,7 +734,12 @@ int main()
       uint8_t name_len;
       next_arg(&filename, &name_len);
 
-      char ext[4];
+      char ext[4] = {
+          '\0',
+      };
+
+      char dirname[name_len];
+      strcpy(filename, dirname);
 
       uint8_t sep_retval;
       sep_retval = separate_filename_extension(&filename, &name_len, &ext);
@@ -739,13 +748,20 @@ int main()
         continue;
       }
 
+      bool found = FALSE;
+
       request->buf = buffer;
       request->name = ".";
       request->inode = 1; // start from root
       request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
       request->name_len = 1;
       request->inode_only = FALSE;
-      whereis(request, filename, ext, "");
+      whereis(request, dirname, filename, ext, "", &found);
+
+      if (!found)
+      {
+        puts("File/ folder not exist\n");
+      }
     }
   }
 

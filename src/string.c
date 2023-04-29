@@ -75,6 +75,8 @@ void append(const char *stra, const char *strb, char *destination)
     {
         destination[i++] = strb[j];
     }
+
+    destination[i] = '\0';
 }
 
 void append3(const char *stra, const char *strb, const char *strc, char *destination)
@@ -95,6 +97,8 @@ void append3(const char *stra, const char *strb, const char *strc, char *destina
     {
         destination[i++] = strc[j];
     }
+
+    destination[i] = '\0';
 }
 
 void append_path(const char *stra, const char *strb, char *destination)
@@ -113,4 +117,6 @@ void append_path(const char *stra, const char *strb, char *destination)
     {
         destination[i++] = strb[j];
     }
+
+    destination[i] = '\0';
 }

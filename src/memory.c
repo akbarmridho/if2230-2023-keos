@@ -99,6 +99,7 @@ uint32_t realloc(void *ptr, uint32_t size)
 
     if (free((void *)ptr) == FALSE) // failed to free
     {
+        free((void *)newptr);
         return 0;
     }
 
