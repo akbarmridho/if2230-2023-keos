@@ -496,6 +496,23 @@ void whereis(struct EXT2DriverRequest *request, char *targetdir, char *targetnam
   }
 }
 
+void help()
+{
+  puts("Documentation\n\n");
+  puts("Daftar perintah: \n");
+  puts("cat filename          show content of file\n");
+  puts("cd target             move current directory to target. support relative path\n");
+  puts("clear                 clear current screen\n");
+  puts("cp [-r] source dest   copy file/folder to destination\n");
+  puts("ls                    show current directory contents\n");
+  puts("mkdir dirname         create new directory\n");
+  puts("mv source dest        move file/folder to destination\n");
+  puts("nano filename         create a new file with contents. only support write\n");
+  puts("rm [-r] target        delete folder/ file\n");
+  puts("time                  show current time\n");
+  puts("whereis name          find file/ folder with given name\n");
+}
+
 int main()
 {
   struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
@@ -727,6 +744,10 @@ int main()
     else if (!strcmp(arg, "clear", len))
     {
       clear_screen();
+    }
+    else if (!strcmp(arg, "help", len))
+    {
+      help();
     }
     else if (!strcmp(arg, "whereis", len))
     {
