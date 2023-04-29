@@ -117,7 +117,6 @@ void kernel_setup(void)
             .name_len = 5,
         };
     int8_t retval;
-    retval = delete (req);
     retval = read(req);
     (void)retval;
 
