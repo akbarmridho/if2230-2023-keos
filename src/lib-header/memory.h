@@ -8,6 +8,7 @@
 struct allocator
 {
     uint32_t size;
+    uint32_t prevsize;
     uint8_t is_allocated;
 };
 

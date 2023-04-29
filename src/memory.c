@@ -12,19 +12,32 @@ void initialize_memory()
 uint32_t malloc(uint32_t size)
 {
     struct allocator *entry = (struct allocator *)HEAP_START_ADDRESS;
+    struct allocator *prev = (struct allocator *)HEAP_START_ADDRESS;
 
     bool found = FALSE;
+    bool has_prev = FALSE;
 
     while (!found && ((uint32_t)entry < HEAP_START_ADDRESS + PAGE_FRAME_SIZE))
     {
         if ((*entry).is_allocated)
         {
+            prev = entry;
+            has_prev = TRUE;
             entry += sizeof(struct allocator) + (*entry).size;
         }
         else
         {
             found = TRUE;
             (*entry).is_allocated = TRUE;
+
+            if (has_prev)
+            {
+                entry->prevsize = prev->size;
+            }
+            else
+            {
+                entry->prevsize = 0;
+            }
 
             if ((*entry).size != 0)
             {
@@ -42,6 +55,7 @@ uint32_t malloc(uint32_t size)
                     struct allocator *next = (struct allocator *)entry + size + sizeof(struct allocator);
                     next->is_allocated = FALSE;
                     next->size = entry->size - size - sizeof(struct allocator);
+                    next->prevsize = size;
                     (*entry).size = size;
                 }
             }
@@ -79,9 +93,17 @@ bool free(void *ptr)
         next = next + sizeof(struct allocator) + next->size;
     }
 
-    // Known internal fragmentation:
     // kasus ketika terdapat alokasi memory A - B - C dan kita melakukan free pada C sedangkan B merupakan
-    // blok memori kosong. Seharusnya, B dan C digabung, tetapi pada implementasi ini belum ditangani
+    // blok memori kosong. B dan C digabung
+    struct allocator *current = entry;
+    struct allocator *prev = (struct allocator *)(current - current->prevsize - sizeof(struct allocator));
+
+    while ((uint32_t)prev >= HEAP_START_ADDRESS && !prev->is_allocated && prev->size != 0)
+    {
+        prev->size += current->size + sizeof(struct allocator);
+        current = prev;
+        prev = (struct allocator *)(current - current->prevsize - sizeof(struct allocator));
+    }
 
     return TRUE;
 }
