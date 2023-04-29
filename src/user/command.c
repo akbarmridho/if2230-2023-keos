@@ -268,6 +268,7 @@ void help()
   puts("mv source dest        move file/folder to destination\n");
   puts("nano filename         create a new file with contents. only support write\n");
   puts("rm [-r] target        delete folder/ file\n");
+  puts("snake                 play snake game\n");
   puts("time                  show current time\n");
   puts("whereis name          find file/ folder with given name\n");
 }
