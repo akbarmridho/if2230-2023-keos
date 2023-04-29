@@ -32,4 +32,6 @@ void get_keyboard_events(struct KeyboardEvents *events);
 
 void reset_keyboard_events(void);
 
+uint32_t get_timestamp(void);
+
 #endif

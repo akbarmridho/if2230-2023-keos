@@ -109,3 +109,10 @@ void reset_keyboard_events(void)
 {
   syscall(12, 0, 0, 0);
 }
+
+uint32_t get_timestamp(void)
+{
+  uint32_t result;
+  syscall(14, (uint32_t)&result, 0, 0);
+  return result;
+}

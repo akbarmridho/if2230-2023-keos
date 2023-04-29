@@ -6,6 +6,7 @@
 #include "../lib-header/stdmem.h"
 #include "../lib-header/memory.h"
 #include "../lib-header/string.h"
+#include "../lib-header/cmos.h"
 #include "./idt.h"
 
 struct TSSEntry _interrupt_tss_entry = {
@@ -135,6 +136,8 @@ void syscall(struct CPURegister cpu, __attribute__((unused)) struct InterruptSta
     case 13:
         *((uint32_t *)cpu.ebx) = realloc((void *)cpu.ecx, cpu.edx);
         break;
+    case 14:
+        *((bool *)cpu.ebx) = get_timestamp();
     default:
         break;
     }
