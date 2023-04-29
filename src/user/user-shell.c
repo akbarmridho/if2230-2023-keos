@@ -310,6 +310,91 @@ void nano(struct EXT2DriverRequest *request, char *filename, uint8_t name_len)
     }
 }
 
+void whereis(struct EXT2DriverRequest *request, char *targetname, char targetext[4], char *current_path)
+{
+    int8_t retval = sys_read_directory(request);
+    if (retval != 0)
+    {
+        return;
+    }
+
+    uint32_t offset = get_directory_first_child_offset(request->buf);
+    struct EXT2DirectoryEntry *entry = get_directory_entry(request->buf, offset);
+    while (entry->inode != 0)
+    {
+        if (entry->file_type == EXT2_FT_NEXT)
+        {
+            request->inode = entry->inode;
+            sys_read_next_directory(request);
+            offset = 0;
+            entry = get_directory_entry(request->buf, offset);
+            continue;
+        }
+        if (entry->file_type == EXT2_FT_REG_FILE)
+        {
+            // cek jika sama
+            char *filename = get_entry_name(entry);
+
+            // filename sama
+            if (is_equal(filename, targetname) && is_equal(entry->ext, targetext))
+            {
+                // file tanpa ext
+                if (strlen(targetext) == 0)
+                {
+                    char result[strlen(filename) + strlen(current_path) + 2]; // include path separator
+                    append_path(current_path, filename, result);
+                    puts(result);
+                    puts("\n");
+                }
+                else // file dengan ext
+                {
+                    char file_wext[strlen(filename) + strlen(targetext) + 2]; // include dot
+                    append3(filename, ".", targetext, file_wext);
+
+                    char result[strlen(file_wext) + strlen(current_path) + 2];
+                    append_path(current_path, file_wext, result);
+                    puts(result);
+                    puts("\n");
+                }
+            }
+        }
+        else
+        {
+            // cek jika sama
+            // panggil whereis juga
+            char *foldername = get_entry_name(entry);
+
+            if (strlen(targetext) == 0 && is_equal(foldername, targetname))
+            {
+                char result[strlen(foldername) + strlen(current_path) + 2];
+                append_path(current_path, foldername, result);
+                puts(result);
+                puts("\n");
+            }
+
+            // explore folder berikutnya
+            struct EXT2DriverRequest *newReq = malloc(sizeof(struct EXT2DriverRequest));
+            struct BlockBuffer *buffer = malloc(sizeof(struct BlockBuffer) * BLOCK_COUNT);
+            newReq->buf = buffer;
+            newReq->buffer_size = BLOCK_COUNT * BLOCK_SIZE;
+            newReq->inode_only = FALSE;
+            newReq->inode = request->inode;
+            newReq->name = foldername;
+            newReq->name_len = strlen(foldername);
+
+            char *new_current_path = malloc(strlen(current_path) + strlen(foldername) + 2);
+            append_path(current_path, foldername, new_current_path);
+            whereis(newReq, targetname, targetext, new_current_path);
+
+            free(new_current_path);
+            free(buffer);
+            free(newReq);
+        }
+        offset += entry->rec_len;
+        entry = get_directory_entry(request->buf, offset);
+    }
+}
+
 int main()
 {
     struct EXT2DriverRequest *request = malloc(sizeof(struct EXT2DriverRequest));
@@ -484,6 +569,29 @@ int main()
         else if (!strcmp(arg, "clear", len))
         {
             clear_screen();
+        }
+        else if (!strcmp(arg, "whereis", len))
+        {
+            char *filename = arg + len;
+            uint8_t name_len;
+            next_arg(&filename, &name_len);
+
+            char ext[4];
+
+            uint8_t sep_retval;
+            sep_retval = separate_filename_extension(&filename, &name_len, &ext);
+            if (sep_retval != 0)
+            {
+                continue;
+            }
+
+            request->buf = buffer;
+            request->name = ".";
+            request->inode = 1; // start from root
+            request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
+            request->name_len = 1;
+            request->inode_only = FALSE;
+            whereis(request, filename, ext, "");
         }
     }
 
