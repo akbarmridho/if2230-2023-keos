@@ -525,7 +525,31 @@ int main()
             }
             else
             {
-                puts("hehe\n");
+                char *src = flag + flag_len + 1;
+                uint8_t src_len;
+                next_arg(&src, &src_len);
+                char *dst = src + src_len + 1;
+                if (separate_filename_extension(&src, &src_len, &request->ext) != 0)
+                {
+                    continue;
+                }
+                if (src_len == 0)
+                {
+                    puts("Missing source file\n");
+                }
+                char extdst[4];
+                uint8_t dst_len;
+                next_arg(&dst, &dst_len);
+                if (separate_filename_extension(&dst, &dst_len, &extdst) != 0)
+                {
+                    continue;
+                }
+                if (dst_len == 0)
+                {
+                    puts("Missing destination file\n");
+                    continue;
+                }
+                cp(request, src, src_len, dst, dst_len, extdst);
             }
         }
         else if (!strcmp(arg, "cat", len))
