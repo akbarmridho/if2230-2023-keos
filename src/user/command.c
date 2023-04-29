@@ -234,3 +234,20 @@ void time()
 
   puts(" UTC\n");
 }
+
+void help()
+{
+  puts("Documentation\n\n");
+  puts("Daftar perintah: \n");
+  puts("cat filename          show content of file\n");
+  puts("cd target             move current directory to target. support relative path\n");
+  puts("clear                 clear current screen\n");
+  puts("cp [-r] source dest   copy file/folder to destination\n");
+  puts("ls [foldername]       show current or target directory contents\n");
+  puts("mkdir dirname         create new directory\n");
+  puts("mv source dest        move file/folder to destination\n");
+  puts("nano filename         create a new file with contents. only support write\n");
+  puts("rm [-r] target        delete folder/ file\n");
+  puts("time                  show current time\n");
+  puts("whereis name          find file/ folder with given name\n");
+}

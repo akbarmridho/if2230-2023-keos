@@ -17,4 +17,6 @@ void cpr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, char *ds
 
 void time();
 
+void help();
+
 #endif
