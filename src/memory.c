@@ -73,7 +73,7 @@ bool free(void *ptr)
     // cek berikutnya dan gabung bila ada yang kosong
     struct allocator *next = entry + sizeof(struct allocator) + entry->size;
 
-    while (!next->is_allocated && ((uint32_t)next < HEAP_START_ADDRESS + PAGE_FRAME_SIZE))
+    while (!next->is_allocated && next->size != 0 && ((uint32_t)next < HEAP_START_ADDRESS + PAGE_FRAME_SIZE))
     {
         entry->size += next->size + sizeof(struct allocator);
         next = next + sizeof(struct allocator) + next->size;
