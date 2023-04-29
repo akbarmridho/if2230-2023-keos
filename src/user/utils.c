@@ -8,10 +8,10 @@ void waitsecond()
         ;
 }
 
-void waitbusy()
+void waitbusy(uint32_t n)
 {
-    // loop 1 million time
-    for (uint32_t i = 0; i < 1e6; i++)
+    // loop n million time
+    for (uint32_t i = 0; i < 1e6 * n; i++)
         ;
 }
 

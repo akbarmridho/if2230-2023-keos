@@ -6,7 +6,7 @@
  */
 void waitsecond();
 
-void waitbusy();
+void waitbusy(uint32_t n);
 
 int32_t rand(int32_t low, int32_t high);
 

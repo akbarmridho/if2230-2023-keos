@@ -23,13 +23,15 @@ void update_framebuffer()
     bgs[i] = 0;
   }
   int pos;
+  // wall atas bawah
   for (uint32_t i = 0; i < SNAKE_COLUMN + 2; i++)
   {
-    pos = COLUMN * (ROW_OFFSET - 1) + COLUMN_OFFSET - 1 + i;
+    pos = COLUMN * (ROW_OFFSET) + COLUMN_OFFSET - 1 + i;
     bgs[pos] = 0x06;
     pos += SNAKE_ROW * COLUMN;
     bgs[pos] = 0x06;
   }
+  // wall kiri kanan
   for (uint32_t i = 0; i < SNAKE_ROW; i++)
   {
     pos = COLUMN * (ROW_OFFSET + i) + COLUMN_OFFSET - 1;
@@ -147,6 +149,17 @@ void change_dir(int8_t dir)
 void start_snake()
 {
   srand(get_timestamp());
+
+  puts("Loading ...\n");
+
+  uint32_t starttime = get_timestamp();
+  // loop n million time
+  uint32_t n_million = 30;
+  waitbusy(n_million);
+  uint32_t endtime = get_timestamp();
+
+  int32_t initial_wait_loop = (int32_t)(0.5 * n_million / ((float)endtime - (float)starttime));
+
   snake.alive = TRUE;
   snake.score = 0;
   chars = malloc(ROW * COLUMN);
@@ -174,7 +187,18 @@ void start_snake()
   new_food();
   do
   {
-    waitsecond();
+
+    if (snake.score % 2 == 0 && snake.score != 0)
+    {
+      if (initial_wait_loop > 2)
+      {
+        initial_wait_loop--;
+      }
+    }
+
+    // waitsecond();
+    waitbusy(initial_wait_loop);
+
     get_keyboard_events(&events);
     if (events.scancodes[KEY_UP_DOWN])
     {
