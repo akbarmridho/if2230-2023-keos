@@ -278,6 +278,7 @@ char shift_map[] = {
 };
 
 static struct KeyboardDriverState keyboard_state;
+static struct KeyboardEvents events;
 
 /* -- Driver Interfaces -- */
 
@@ -286,15 +287,28 @@ void keyboard_state_activate(void)
 {
     memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
     keyboard_state.buffer_index = 0;
+    keyboard_state.text_mode = FALSE;
     keyboard_state.keyboard_input_on = TRUE;
+    keyboard_state.shift_left = FALSE;
+    keyboard_state.shift_right = FALSE;
+    keyboard_state.capslock = FALSE;
+    keyboard_state.ctrl = FALSE;
+    keyboard_state.aborted = FALSE;
     framebuffer_state.start_col = framebuffer_state.col;
     framebuffer_state.start_row = framebuffer_state.row;
+    framebuffer_set_cursor(framebuffer_state.row, framebuffer_state.col);
 }
 
 // Deactivate keyboard ISR / stop listening keyboard interrupt
 void keyboard_state_deactivate(void)
 {
     keyboard_state.keyboard_input_on = FALSE;
+    disable_cursor();
+}
+
+void keyboard_text_mode(void)
+{
+    keyboard_state.text_mode = TRUE;
 }
 
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
@@ -303,10 +317,25 @@ void get_keyboard_buffer(char *buf)
     memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);
 }
 
+void get_keyboard_events(struct KeyboardEvents *buf)
+{
+    memcpy(buf, &events, sizeof(struct KeyboardEvents));
+}
+
+void reset_events(void)
+{
+    memset(events.scancodes, FALSE, sizeof(struct KeyboardEvents));
+}
+
 // Check whether keyboard ISR is active or not - @return Equal with keyboard_input_on value
 bool is_keyboard_blocking(void)
 {
     return keyboard_state.keyboard_input_on;
+}
+
+bool is_keyboard_aborted(void)
+{
+    return keyboard_state.aborted;
 }
 
 /* -- Keyboard Interrupt Service Routine -- */
@@ -335,12 +364,13 @@ uint8_t get_current_buffer_index()
 
 void keyboard_isr(void)
 {
+    uint8_t scancode = in(KEYBOARD_DATA_PORT);
+    events.scancodes[scancode] = TRUE;
+
     if (!keyboard_state.keyboard_input_on)
         keyboard_state.buffer_index = 0;
     else
     {
-        uint8_t scancode = in(KEYBOARD_DATA_PORT);
-
         // handle capslock and shift
         switch (scancode)
         {
@@ -358,6 +388,12 @@ void keyboard_isr(void)
             break;
         case 0xb6:
             keyboard_state.shift_right = FALSE;
+            break;
+        case 0x1d:
+            keyboard_state.ctrl = TRUE;
+            break;
+        case 0x9d:
+            keyboard_state.ctrl = FALSE;
             break;
         case 0x4b:
             // left arrow
@@ -395,7 +431,13 @@ void keyboard_isr(void)
             return;
         }
         uint8_t current_buffer_index = get_current_buffer_index();
-        if (mapped_char == '\b')
+        if (keyboard_state.text_mode && keyboard_state.ctrl && (mapped_char == 'c' || mapped_char == 'C'))
+        {
+            // abort text mode
+            keyboard_state.aborted = TRUE;
+            keyboard_state_deactivate();
+        }
+        else if (mapped_char == '\b')
         {
             // backspace
             if (current_buffer_index > 0)
@@ -434,6 +476,11 @@ void keyboard_isr(void)
         }
         else if (mapped_char == '\n')
         {
+            if (keyboard_state.text_mode)
+            {
+                // add newline if text mode
+                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = '\n';
+            }
             puts(&mapped_char, 1, 0xF);
             keyboard_state_deactivate();
         }

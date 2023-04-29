@@ -54,6 +54,16 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    bool is_replace = FALSE;
+
+    if (argc == 5)
+    {
+        if (!strcmp(argv[4], "--replace", strlen(argv[4])))
+        {
+            is_replace = TRUE;
+        }
+    }
+
     // Read storage into memory, requiring 4 MB memory
     image_storage = malloc(4 * 1024 * 1024);
     file_buffer = malloc(4 * 1024 * 1024);
@@ -90,11 +100,17 @@ int main(int argc, char *argv[])
     request.buffer_size = filesize;
     request.name = name;
     request.name_len = filename_length;
+    request.is_dir = FALSE;
 
     sscanf(argv[2], "%u", &request.inode);
     sscanf(argv[1], "%8s", request.name);
 
     int retcode = write(request);
+    if (retcode == 1 && is_replace)
+    {
+        retcode = delete (request);
+        retcode = write(request);
+    }
     if (retcode == 0)
         puts("Write success");
     else if (retcode == 1)

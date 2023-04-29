@@ -105,6 +105,8 @@ void deallocate_node(uint32_t inode);
  */
 void deallocate_blocks(void *_locations, uint32_t blocks);
 
+uint32_t deallocate_block(uint32_t *locations, uint32_t blocks, struct BlockBuffer *bitmap, uint32_t depth, uint32_t *last_bgd, bool bgd_loaded);
+
 /**
  * @brief search for available blocks in the disk
  * @param preferred_bgd bgd location priority

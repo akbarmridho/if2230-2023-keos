@@ -79,6 +79,15 @@ void *malloc(uint32_t size)
   return (void *)retval;
 }
 
+void *realloc(void *ptr, uint32_t size)
+{
+  uint32_t retval;
+
+  syscall(13, (uint32_t)&retval, (uint32_t)ptr, size);
+
+  return (void *)retval;
+}
+
 bool free(void *ptr)
 {
   bool retval;
@@ -86,4 +95,24 @@ bool free(void *ptr)
   syscall(8, (uint32_t)&retval, (uint32_t)ptr, 0);
 
   return retval;
+}
+
+void get_text(char *buf, uint32_t size, uint32_t *result_size)
+{
+  syscall(9, (uint32_t)buf, size, (uint32_t)result_size);
+}
+
+void clear_screen(void)
+{
+  syscall(10, 0, 0, 0);
+}
+
+void get_keyboard_events(struct KeyboardEvents *events)
+{
+  syscall(11, (uint32_t)events, 0, 0);
+}
+
+void reset_keyboard_events(void)
+{
+  syscall(12, 0, 0, 0);
 }

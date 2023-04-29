@@ -17,4 +17,6 @@ uint32_t malloc(uint32_t size);
 
 bool free(void *ptr);
 
+uint32_t realloc(void *ptr, uint32_t size);
+
 #endif

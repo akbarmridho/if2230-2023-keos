@@ -50,7 +50,8 @@
             "args": [
                 "shell",
                 "1",
-                "storage.bin"
+                "storage.bin",
+                "--replace"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",

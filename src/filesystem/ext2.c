@@ -292,7 +292,7 @@ uint32_t map_node_blocks(void *ptr, uint32_t blocks, uint32_t *locations, uint32
   }
   uint32_t location;
   uint32_t found_count = 0;
-  struct BlockBuffer buffer;
+  uint32_t buffer[BLOCK_SIZE / 4u];
   search_blocks(0, &location, 1, &found_count);
   uint32_t capacity = 1;
   for (uint8_t i = 0; i < depth - 1; i++)
@@ -302,7 +302,7 @@ uint32_t map_node_blocks(void *ptr, uint32_t blocks, uint32_t *locations, uint32
 
   for (uint32_t i = 0; i < BLOCK_SIZE / 4u; i++)
   {
-    buffer.buf[i] = map_node_blocks(ptr, blocks, locations, mapped_count, depth - 1);
+    buffer[i] = map_node_blocks(ptr, blocks, locations, mapped_count, depth - 1);
     locations += capacity;
     if (blocks <= capacity)
       break;
@@ -434,34 +434,68 @@ void deallocate_blocks(void *_locations, uint32_t blocks)
   uint32_t last_bgd = 0;
   struct BlockBuffer block;
 
-  for (uint32_t i = 0; i < blocks; i++)
+  for (uint32_t i = 0; i < 15 && blocks > 0; i++)
   {
-    uint32_t bgd = locations[i] / BLOCKS_PER_GROUP;
-
-    if (i == 0 || last_bgd != bgd)
+    uint32_t deallocated;
+    if (i < 12)
     {
-      if (last_bgd != bgd)
-      {
-        // update previous bgd_bitmap
-        write_blocks(&block, bgd_table.table[last_bgd].block_bitmap, 1);
-      }
-
-      // load a new one
-      read_blocks(&block, bgd_table.table[bgd].block_bitmap, 1);
+      deallocated = deallocate_block(locations + i, blocks, &block, 0, &last_bgd, i != 0);
     }
-
-    uint32_t local_idx = locations[i] % BLOCKS_PER_GROUP;
-
-    uint8_t offset = 7 - local_idx % 8;
-
-    // set flag of the block bitmap
-    block_buffer.buf[local_idx / 8] &= 0xFFu ^ (1u << offset);
-    bgd_table.table[last_bgd].free_blocks_count++;
+    else
+    {
+      deallocated = deallocate_block(locations + i, blocks, &block, i - 11, &last_bgd, TRUE);
+    }
+    blocks -= deallocated;
+    // uint32_t bgd = locations[i] / BLOCKS_PER_GROUP;
   }
   // update last bgd bitmap
   write_blocks(&block, bgd_table.table[last_bgd].block_bitmap, 1);
   // sync bgd
   write_blocks(&bgd_table, 2, 1);
+}
+
+uint32_t deallocate_block(uint32_t *locations, uint32_t blocks, struct BlockBuffer *bitmap, uint32_t depth, uint32_t *last_bgd, bool bgd_loaded)
+{
+  if (blocks == 0)
+    return 0;
+  uint32_t bgd = *locations / BLOCKS_PER_GROUP;
+  if (!bgd_loaded || bgd != *last_bgd)
+  {
+    if (bgd_loaded)
+    {
+      // update previous bgd_bitmap
+      write_blocks(bitmap, bgd_table.table[*last_bgd].block_bitmap, 1);
+    }
+    // load a new one
+    read_blocks(bitmap, bgd_table.table[bgd].block_bitmap, 1);
+    *last_bgd = bgd;
+  }
+  uint32_t local_idx = *locations % BLOCKS_PER_GROUP;
+  uint8_t offset = 7 - local_idx % 8;
+  // set flag of the block bitmap
+  bitmap->buf[local_idx / 8] &= 0xFFu ^ (1u << offset);
+  bgd_table.table[*last_bgd].free_blocks_count++;
+  if (depth == 0)
+  {
+    return 1;
+  }
+  struct BlockBuffer child_buf;
+
+  // load the direct block
+  read_blocks(child_buf.buf, *locations, 1);
+  uint32_t *child_loc = (uint32_t *)child_buf.buf;
+  uint32_t deallocated = 0;
+  for (uint32_t i = 0; i < BLOCK_SIZE / 4u; i++)
+  {
+    uint32_t new_deallocated = deallocate_block(child_loc, blocks, bitmap, depth - 1, last_bgd, TRUE);
+    deallocated += new_deallocated;
+    blocks -= new_deallocated;
+    if (blocks == 0)
+    {
+      return deallocated;
+    }
+  }
+  return deallocated;
 }
 
 // assume blocks always available
@@ -571,13 +605,13 @@ uint32_t load_blocks_rec(void *ptr, uint32_t block, uint32_t block_size, uint32_
     return 1u;
   }
 
-  struct BlockBuffer blocks;
+  uint32_t blocks[BLOCK_SIZE / 4u];
   read_blocks(&blocks, block, 1);
   uint32_t allocated = 0;
 
   for (uint32_t i = 0; i < BLOCK_SIZE && block_size > 0; i++)
   {
-    uint32_t new_allocated = load_blocks_rec(ptr, blocks.buf[i], size, block_size, depth - 1);
+    uint32_t new_allocated = load_blocks_rec(ptr, blocks[i], block_size, size, depth - 1);
     ptr += new_allocated * BLOCK_SIZE;
     block_size -= new_allocated;
     allocated += new_allocated;
