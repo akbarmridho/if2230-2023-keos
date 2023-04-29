@@ -109,7 +109,6 @@ int main(int argc, char *argv[])
     if (retcode == 1 && is_replace)
     {
         retcode = delete (request);
-        printf("retcode = %d\n", retcode);
         retcode = write(request);
     }
     if (retcode == 0)
