@@ -1,5 +1,9 @@
 # Tugas Besar IF2230 Sistem Operasi
 
+## System Requirements
+
+- GNU GCC 11 (need some adjustment if it is compiled in GCC 9)
+
 ## Table of Contents
 - [Tugas Besar IF2230 Sistem Operasi](#tugas-besar-if2230-sistem-operasi)
   - [Table of Contents](#table-of-contents)

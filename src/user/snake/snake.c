@@ -9,6 +9,7 @@ uint8_t *fgs;
 uint8_t *bgs;
 int foodx;
 int foody;
+int32_t initial_wait_loop = 2;
 
 int get_segment_pos(int x, int y)
 {
@@ -26,9 +27,9 @@ void update_framebuffer()
   // wall atas bawah
   for (uint32_t i = 0; i < SNAKE_COLUMN + 2; i++)
   {
-    pos = COLUMN * (ROW_OFFSET) + COLUMN_OFFSET - 1 + i;
+    pos = COLUMN * (ROW_OFFSET - 1) + COLUMN_OFFSET - 1 + i;
     bgs[pos] = 0x06;
-    pos += SNAKE_ROW * COLUMN;
+    pos += (SNAKE_ROW + 1) * COLUMN;
     bgs[pos] = 0x06;
   }
   // wall kiri kanan
@@ -106,6 +107,13 @@ void check_collision()
     snake.segments[snake.length] = snake.segments[snake.length - 1];
     snake.length++;
     snake.score++;
+    if (snake.score % 2 == 0 && snake.score != 0)
+    {
+      if (initial_wait_loop > 2)
+      {
+        initial_wait_loop--;
+      }
+    }
     new_food();
   }
 }
@@ -126,20 +134,32 @@ void change_dir(int8_t dir)
   switch (dir)
   {
   case 1:
-    snake.vel_y = -1;
-    snake.vel_x = 0;
+    if (snake.vel_y != 1)
+    {
+      snake.vel_y = -1;
+      snake.vel_x = 0;
+    }
     break;
   case 2:
-    snake.vel_y = 0;
-    snake.vel_x = 1;
+    if (snake.vel_x != -1)
+    {
+      snake.vel_y = 0;
+      snake.vel_x = 1;
+    }
     break;
   case 3:
-    snake.vel_y = 1;
-    snake.vel_x = 0;
+    if (snake.vel_y != -1)
+    {
+      snake.vel_y = 1;
+      snake.vel_x = 0;
+    }
     break;
   case 4:
-    snake.vel_y = 0;
-    snake.vel_x = -1;
+    if (snake.vel_x != 1)
+    {
+      snake.vel_y = 0;
+      snake.vel_x = -1;
+    }
     break;
   default:
     break;
@@ -158,8 +178,7 @@ void start_snake()
   waitbusy(n_million);
   uint32_t endtime = get_timestamp();
 
-  int32_t initial_wait_loop = (int32_t)(0.5 * n_million / ((float)endtime - (float)starttime));
-
+  initial_wait_loop = (int32_t)(0.4 * n_million / ((float)endtime - (float)starttime));
   snake.alive = TRUE;
   snake.score = 0;
   chars = malloc(ROW * COLUMN);
@@ -187,14 +206,6 @@ void start_snake()
   new_food();
   do
   {
-
-    if (snake.score % 2 == 0 && snake.score != 0)
-    {
-      if (initial_wait_loop > 2)
-      {
-        initial_wait_loop--;
-      }
-    }
 
     // waitsecond();
     waitbusy(initial_wait_loop);
@@ -231,5 +242,6 @@ void start_snake()
   free(chars);
   free(fgs);
   free(bgs);
+  free(snake.segments);
   clear_screen();
 }
