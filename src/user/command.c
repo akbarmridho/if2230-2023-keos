@@ -319,6 +319,7 @@ void rm(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t 
   }
 
   request->inode = parent;
+  request->is_dir = FALSE;
   int8_t delretval = sys_delete(request);
   if (delretval != 0)
   {
@@ -338,8 +339,9 @@ void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t
   request->name_len = src_len;
   request->buffer_size = BLOCK_SIZE * BLOCK_COUNT;
   request->inode_only = FALSE;
-  int8_t readretval = sys_read(request);
-  if (readretval != 0)
+  int8_t parentreadval = sys_read(request);
+  int8_t readretval;
+  if (parentreadval != 0)
   {
     // puts("Not a file\n");
     request->name = src;
@@ -401,6 +403,7 @@ void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t
           newReq->inode = request->inode;
           newReq->name = filename;
           newReq->name_len = name_len;
+          newReq->is_dir = FALSE;
 
           rm(newReq, filename, name_len, request->inode);
           free(buffer);
@@ -419,6 +422,7 @@ void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t
           newReq->inode = request->inode;
           newReq->name = foldername;
           newReq->name_len = name_len;
+          newReq->is_dir = TRUE;
 
           rmr(newReq, foldername, name_len, request->inode);
           free(buffer);
@@ -431,6 +435,7 @@ void rmr(struct EXT2DriverRequest *request, char *src, uint8_t src_len, uint32_t
   }
 
   request->inode = parent;
+  request->is_dir = parentreadval != 0;
 
   int8_t delretval = sys_delete(request);
   if (delretval != 0)
