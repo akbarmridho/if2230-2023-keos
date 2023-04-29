@@ -446,7 +446,7 @@ void deallocate_blocks(void *_locations, uint32_t blocks)
       deallocated = deallocate_block(locations + i, blocks, &block, i - 11, &last_bgd, TRUE);
     }
     blocks -= deallocated;
-    uint32_t bgd = locations[i] / BLOCKS_PER_GROUP;
+    // uint32_t bgd = locations[i] / BLOCKS_PER_GROUP;
   }
   // update last bgd bitmap
   write_blocks(&block, bgd_table.table[last_bgd].block_bitmap, 1);
